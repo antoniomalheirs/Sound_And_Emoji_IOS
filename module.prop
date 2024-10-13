@@ -4,4 +4,5 @@ version=1.0.1
 versionCode=101
 author=SentinelData
 description=Sound And Emojis IOS for KernelSU!
+updateJson=
 minMagisk=20200
