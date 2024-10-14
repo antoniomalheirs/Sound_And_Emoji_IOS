@@ -6,4 +6,4 @@ Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or Kernel
 
 [topjohnwu](https://github.com/topjohnwu) - For creating magisk
 
-[tiann](https://github.com/tiann)- For expanding on KernelSU
+[tiann](https://github.com/tiann) - For expanding on KernelSU
