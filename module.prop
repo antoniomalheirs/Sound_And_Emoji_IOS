@@ -1,7 +1,7 @@
 id=Sound_And_Emoji_IOS
 name=Sound_And_Emoji_IOS
-version=1.0.4
-versionCode=104
+version=1.0.5
+versionCode=105
 author=SentinelData
 description=Sound And Emojis IOS for KernelSU!
 updateJson=https://raw.githubusercontent.com/antoniomalheirs/Sound_And_Emoji_IOS/main/update_metada/update.json

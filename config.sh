@@ -50,7 +50,7 @@ LATESTARTSERVICE=false
 
 print_modname() {
   ui_print "*******************************"
-  ui_print "     Sound_And_Emoji_IOS       "
+  ui_print "*    Sound_And_Emoji_IOS      *"
   ui_print "*******************************"
 }
 
