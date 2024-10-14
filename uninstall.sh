@@ -1,1 +1,1 @@
-rm -rf /data/adb/Sound_And_Emoji_IOS
+rm -rf /data/adb/modules/Sound_And_Emoji_IOS
