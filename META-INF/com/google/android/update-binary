@@ -170,5 +170,7 @@ $BOOTMODE || recovery_cleanup
 rm -rf $TMPDIR
 
 ui_print "- Done"
+sleep 0.5
 ui_print "- Enjoy :)"
+sleep 0.5
 exit 0
