@@ -5,4 +5,4 @@ versionCode=108
 author=SentinelData
 description=Sound And Emojis IOS for KernelSU!
 updateJson=https://raw.githubusercontent.com/antoniomalheirs/Sound_And_Emoji_IOS/main/update_metada/update.json
-minMagisk=18900
+minMagisk=19000
