@@ -25,3 +25,6 @@
 
 # V1.0.7 Build for Module
 - Created quick uninstall script.
+
+# V1.0.8 Build for Module
+- Unlock test sound for vibrations match into lockscreen.
