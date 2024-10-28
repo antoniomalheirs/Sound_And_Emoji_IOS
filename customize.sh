@@ -28,6 +28,7 @@ run_install() {
 	ui_print " "
   sleep 1
 	ui_print "[*] Instalation Sucess"
+  ui_print " "
 }
 
 set_permissions() {
