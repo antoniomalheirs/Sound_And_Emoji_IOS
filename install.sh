@@ -8,6 +8,7 @@ REPLACE="
 "
 
 run_install() {
+  ui_print " "
   ui_print "*******************************"
   ui_print "*    Sound_And_Emoji_IOS      *"
   ui_print "*******************************"
