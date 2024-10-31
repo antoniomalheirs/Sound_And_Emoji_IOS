@@ -1,6 +1,6 @@
 ## Magisk and KernelSu Sound_And_Emoji_IOS
-
-Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or KernelSU.
+ 
+*  Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or KernelSU.
 
 # Changelogs
 
