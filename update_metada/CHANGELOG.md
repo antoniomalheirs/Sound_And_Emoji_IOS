@@ -37,7 +37,7 @@ Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or Kernel
 - Unlock test sound for vibrations match into lockscreen.
 
 
-### V1.0.8 Build for Module
+### V1.0.9 Build for Module
 - Update customize.sh script for install on Magisk.
 
 
