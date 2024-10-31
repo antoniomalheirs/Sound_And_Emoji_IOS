@@ -42,7 +42,7 @@ Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or Kernel
 
 
 ## Credits:
-- [topjohnwu](https://github.com/topjohnwu) - For creating magisk
-- [tiann](https://github.com/tiann) - For expanding on KernelSU
-- [TheGabrielHoward](https://github.com/TheGabrielHoward/IOS-sounds/tree/master) - For some sounds to replace the Android UI and the idea of creating a module for that
-- [dtingley11](https://github.com/dtingley11/KernelSU-iOS-Emoji) - For the code to replace fonts on different Android devices
+### [topjohnwu](https://github.com/topjohnwu) - For creating magisk
+### [tiann](https://github.com/tiann) - For expanding on KernelSU
+### [TheGabrielHoward](https://github.com/TheGabrielHoward/IOS-sounds/tree/master) - For some sounds to replace the Android UI and the idea of creating a module for that
+### [dtingley11](https://github.com/dtingley11/KernelSU-iOS-Emoji) - For the code to replace fonts on different Android devices
