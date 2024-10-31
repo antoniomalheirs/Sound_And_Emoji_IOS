@@ -10,7 +10,6 @@ if getprop ro.product.manufacturer | grep -qE -e "^samsung"; then
     mount -o bind "$MODDIR/system/etc/fonts_additional.xml" "$SYSTEM_ADDITIONAL_XML"
 fi
 
-
 if getprop ro.product.manufacturer | grep -qE -e "^LGE"; then
     LGE_FONT_FILE="$MODDIR/system/fonts/LGNotoColorEmoji.ttf"
     mount -o bind "$FONT_FILE" "$LGE_FONT_FILE"
@@ -23,7 +22,6 @@ if getprop ro.product.manufacturer | grep -qE -e "^HTC"; then
     chmod 644 "$HTC_FONT_FILE"
 fi
 
-# Set paths relative to the module's directory
 MODDIR="${0%/*}"
 FONT_FILE="$MODDIR/system/fonts/NotoColorEmoji.ttf"
 SYSTEM_FONT_FILE="/system/fonts/NotoColorEmoji.ttf"
@@ -34,6 +32,9 @@ mount -o bind "$FONT_FILE" "$SYSTEM_FONT_FILE"
 
 # Ensure correct permissions for the replacement file
 chmod 644 "$SYSTEM_FONT_FILE"
+
+# Clearing Gboard Cache
+[ -d /data/data/com.google.android.inputmethod.latin ] && find /data -type d -path '*inputmethod.latin*/*cache*' \  -exec rm -rf {} + && am force-stop com.google.android.inputmethod.latin
 
 # Function to check if a package is installed
 package_installed() {
