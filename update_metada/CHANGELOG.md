@@ -1,4 +1,4 @@
-## Magisk and KernelSu Sound_And_Emoji_IOS
+## Magisk and KernelSu/or KernelSU Next Sound_And_Emoji_IOS
  
 *  Systemlessly replaces Emoji and Sounds with IOS Style. Use with Magisk or KernelSU.
 
@@ -23,6 +23,8 @@
 - Unlock test sound for vibrations match into lockscreen.
 #### V1.0.9 Build for Module
 - Update customize.sh script for install on Magisk.
+#### V1.1.0 Build for Module
+- Update Module files for upstream with IOS 18.4.
 
 ## Credits:
 

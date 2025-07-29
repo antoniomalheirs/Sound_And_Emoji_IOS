@@ -3,6 +3,6 @@ name=Sound_And_Emoji_IOS
 version=1.1.0
 versionCode=110
 author=SentinelData
-description=Sound And Emojis IOS for KernelSU!
+description=Sound And Emojis IOS for KernelSU, Magisk and KernelSu Next!
 updateJson=https://raw.githubusercontent.com/antoniomalheirs/Sound_And_Emoji_IOS/main/update_metada/update.json
-minMagisk=19000
+
