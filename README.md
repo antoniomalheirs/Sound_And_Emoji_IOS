@@ -1,62 +1,55 @@
-# iOS Sound & Emoji Module for Android
+# 🍎 iOS Sounds & Emojis for Android (Pro Magisk Module)
 
-[![Magisk](https://img.shields.io/badge/Magisk-Compatible-red.svg)](https://github.com/topjohnwu/Magisk)
-[![KernelSU](https://img.shields.io/badge/KernelSU-Compatible-blue.svg)](https://github.com/tiann/KernelSU)
-[![iOS Style](https://img.shields.io/badge/Style-iOS_18.4-lightgrey.svg)](https://www.apple.com/ios/)
+[![Magisk](https://img.shields.io/badge/Root-Magisk-orange?style=for-the-badge)](https://github.com/topjohnwu/Magisk)
+[![KernelSU](https://img.shields.io/badge/Root-KernelSU-green?style=for-the-badge)](https://github.com/tiann/KernelSU)
+[![APatch](https://img.shields.io/badge/Root-APatch-blue?style=for-the-badge)](https://github.com/bmax121/APatch)
 
-Este módulo substitui os sons e emojis da interface do seu Android pelos do iOS, sem alterar o sistema. Ele foi projetado para ser totalmente compatível com **Magisk** e **KernelSU** (incluindo o KernelSU Next), proporcionando uma transformação limpa e perfeita.
+A high-performance system-level modification module that brings the premium iOS auditory and visual experience to any rooted Android device. Built with robustness and compatibility in mind, this module uses intelligent installation scripts to ensure zero-risk deployment.
 
----
+## 🛠️ Intelligent Installation Engine (`customize.sh`)
 
-## ⚙️ Como Instalar
+Unlike generic sound packs, this module features a sophisticated installation logic that adapts to your device's environment.
 
-1.  **Baixe** a versão mais recente do módulo na [página de Releases](https://github.com/antoniomalheirs/Sound_And_Emoji_IOS/releases).
-2.  Abra o aplicativo **Magisk** ou **KernelSU**.
-3.  Vá para a seção **Módulos**.
-4.  Toque em **"Instalar a partir do armazenamento"** e selecione o arquivo `.zip` que você baixou.
-5.  Após a instalação ser concluída, toque em **"Reiniciar"** para aplicar as alterações.
+### Deployment Logic
+```mermaid
+graph TD
+    Start[Start Install] --> Env[Detect Environment: Magisk/KSU/APatch]
+    Env --> AndroidAPI[Check Android API Level]
+    
+    AndroidAPI -- API 31+ --> ProdPath[Target: /system/product/media/audio]
+    AndroidAPI -- API < 31 --> LegacyPath[Mirror: /system/media/audio]
+    
+    ProdPath --> OEM[Detect OEM: Xiaomi/Samsung/AOSP]
+    LegacyPath --> OEM
+    
+    OEM --> FontRepl[Replace OEM-specific Emoji Fonts]
+    FontRepl --> Gboard[Deep Clear Gboard Cache]
+    Gboard --> Permissions[Apply SELinux & u:object_r:system_file contexts]
+    Permissions --> End[Success]
+```
 
-## ✨ Funcionalidades
+### Key Technical Features
 
-* **Sons da UI do iOS:** Substitui os sons de interação padrão do Android (bloqueio/desbloqueio, carregamento, cliques do teclado) por seus equivalentes do iOS.
-* **Emojis Mais Recentes do iOS:** Atualiza a fonte do seu sistema para incluir os emojis mais recentes do iOS 18.
-* **Instalação Systemless:** Modifica seu sistema sem alterar a partição `/system`, garantindo a integridade do seu dispositivo e facilitando a desinstalação.
-* **Ampla Compatibilidade:** Funciona com os ambientes Magisk e KernelSU.
+| Feature | Description |
+| :--- | :--- |
+| **OEM Detection** | Automatically detects and replaces fonts like `MiuiColorEmoji.ttf` or `SamsungColorEmoji.ttf` to ensure emojis work in all apps. |
+| **Dual-Path Shield** | Mirrors sound files across `/product` and legacy `/system` paths for maximum ROM compatibility. |
+| **SELinux Compliance** | Enforces correct `u:object_r:system_file:s0` contexts, preventing "silent boot" issues common in modern Android versions. |
+| **OverlayFS Support** | Integrated support for `magisk_overlayfs` for devices with restricted partitions. |
 
----
+## 📦 What's Included
+- **UI Sounds**: Complete iOS sound set (Lock, Charging, Keyboard Taps, Camera, etc.).
+- **Emojis**: Latest iOS emoji set with high-resolution Noto-compatible rendering.
+- **Typography**: Apple's **SF Pro Display** fonts integrated into the system font stack.
 
-## 📝 Changelog
-
-Um histórico detalhado de atualizações e melhorias no módulo.
-
-* **v1.1.0 (Mais recente)**
-    * Atualizados todos os arquivos do módulo para alinhar com o **iOS 18.4**.
-* **v1.0.9**
-    * Melhorado o script `customize.sh` para uma instalação mais confiável no Magisk.
-* **v1.0.8**
-    * Adicionado feedback de vibração na tela de bloqueio para corresponder ao novo som de desbloqueio.
-* **v1.0.7**
-    * Criado um script de desinstalação rápida para fácil remoção.
-* **v1.0.6**
-    * Desenvolvida uma interface de usuário para a página web do repositório do módulo.
-* **v1.0.5**
-    * Atualizado o conjunto de emojis para o **Emoji 18.1**.
-* **v1.0.4**
-    * Otimizado ainda mais o módulo removendo arquivos de recursos redundantes.
-* **v1.0.3**
-    * Limpos e removidos arquivos desnecessários para reduzir o tamanho do módulo.
-* **v1.0.2**
-    * Implementado um sistema de atualização de pacotes para versões futuras.
-* **v1.0.1**
-    * Lançamento inicial.
+## 🚀 Installation
+1. Download the latest `.zip` release.
+2. Flash via **Magisk Manager**, **KernelSU**, or **APatch**.
+3. Reboot and enjoy.
 
 ---
+> [!IMPORTANT]
+> This module clears the Gboard cache during installation to force the refresh of the emoji picker. You may need to wait a few seconds on the first keyboard launch.
 
-## 🙏 Créditos e Agradecimentos
-
-Este projeto foi possível graças ao trabalho fundamental e à inspiração de outros na comunidade de modificação do Android.
-
-* [**topjohnwu**](https://github.com/topjohnwu) - Por criar o **Magisk**, a ferramenta revolucionária para modificação systemless.
-* [**tiann**](https://github.com/tiann) - Por desenvolver o **KernelSU**, fornecendo uma alternativa poderosa baseada no kernel.
-* [**TheGabrielHoward**](https://github.com/TheGabrielHoward/IOS-sounds) - Por fornecer alguns dos arquivos de som do iOS e a ideia inicial para um módulo de substituição de som.
-* [**dtingley11**](https://github.com/dtingley11/KernelSU-iOS-Emoji) - Pelo código de substituição de fonte que lida de forma inteligente com diferentes configurações de dispositivos Android.
+**Sentinel Data Solutions** | *Mobile Experience Engineering*
+**Developed by Zeca**

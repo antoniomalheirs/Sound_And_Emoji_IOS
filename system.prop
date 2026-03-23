@@ -1,0 +1,38 @@
+# Sound configuration for Android (Global override)
+# These properties force Android's AudioManager and SystemUI to look for these exact files.
+# This solves issues on Android 14/15/16 where OEMs ignore standard paths.
+
+ro.config.ringtone=IOSDefaultRingtone.ogg
+ro.config.notification_sound=IOSDefaultMessageNotification.ogg
+ro.config.alarm_alert=IOSDefaultAlarm.ogg
+
+# --- Essential UI Sounds ---
+ro.config.lock_sound=ui/Lock.ogg
+ro.config.unlock_sound=ui/Unlock.ogg
+ro.config.sound_fx_key=ui/KeypressStandard.ogg
+ro.config.sound_fx_keypress_standard=ui/KeypressStandard.ogg
+ro.config.sound_fx_keypress_spacebar=ui/KeypressSpacebar.ogg
+ro.config.sound_fx_keypress_delete=ui/KeypressDelete.ogg
+ro.config.sound_fx_keypress_return=ui/KeypressReturn.ogg
+ro.config.sound_fx_keypress_invalid=ui/KeypressInvalid.ogg
+
+# --- Camera & Recorder ---
+ro.config.camera_sound=ui/camera_click.ogg
+ro.config.camera_focus_sound=ui/camera_focus.ogg
+ro.config.camera_record_start=ui/VideoRecord.ogg
+ro.config.camera_record_stop=ui/VideoStop.ogg
+ro.config.shutter_sound=ui/camera_click.ogg
+
+# --- Battery & Charging ---
+ro.config.low_battery_sound=ui/LowBattery.ogg
+ro.config.charging_started_sound=ui/ChargingStarted.ogg
+ro.config.charging_stopped_sound=ui/ChargingStopped.ogg
+ro.config.wireless_charging_started_sound=ui/WirelessChargingStarted.ogg
+
+# --- Security & NFC ---
+ro.config.trusted_sound=ui/Trusted.ogg
+ro.config.nfc_transfer_complete_sound=ui/NFCTransferComplete.ogg
+ro.config.nfc_transfer_initiated_sound=ui/NFCTransferInitiated.ogg
+ro.config.nfc_success_sound=ui/NFCSuccess.ogg
+ro.config.nfc_failure_sound=ui/NFCFailure.ogg
+ro.config.nfc_initiated_sound=ui/NFCInitiated.ogg
