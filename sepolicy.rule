@@ -1,0 +1,15 @@
+# SEPolicy rules for Sound_And_Emoji_IOS
+# Allow audioserver and mediaserver to read module-mounted files
+# Allow system_server to perform bind mounts in /data/data/
+
+# Allow mediaserver to read system audio files with our custom context
+allow mediaserver system_file file { read open getattr }
+allow audioserver system_file file { read open getattr }
+
+# Allow untrusted apps (Facebook/Messenger) to read bind-mounted emoji fonts
+allow untrusted_app system_file file { read open getattr map }
+allow untrusted_app_32 system_file file { read open getattr map }
+
+# Allow platform apps (Gboard) to read system emoji fonts
+allow platform_app system_file file { read open getattr map }
+allow gmscore_app system_file file { read open getattr map }

@@ -1,0 +1,17 @@
+# Force LF line endings for all module files
+# This prevents Windows from converting to CRLF on checkout
+* text=auto eol=lf
+
+# Explicitly mark shell scripts as LF
+*.sh text eol=lf
+*.prop text eol=lf
+*.rule text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+
+# Binary files — do not touch
+*.ttf binary
+*.ogg binary
+*.wav binary
+*.zip binary

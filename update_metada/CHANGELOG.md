@@ -4,6 +4,18 @@
 
 # Changelogs
 
+#### V1.4.0 — Correção Total de Compatibilidade KernelSU / KernelSU Next / Magisk
+- **CRÍTICO:** Corrigido `system.prop` que usava line endings Windows (CRLF). O `resetprop` não interpreta CRLF, resultando em NENHUMA propriedade de som sendo aplicada. Convertido para LF (Unix).
+- **CRÍTICO:** Removidas flags obsoletas do Magisk antigo (`SKIPMOUNT`, `PROPFILE`, `POSTFSDATA`, `LATESTARTSERVICE`) do `customize.sh`. Estas eram ignoradas pelo KernelSU e Magisk moderno.
+- **CRÍTICO:** Adicionado `post-mount.sh` para KernelSU/KernelSU Next. Os bind mounts do Facebook emoji estavam no `post-fs-data.sh`, que executa ANTES do OverlayFS montar — fazendo com que os arquivos fonte não existissem.
+- **NOVO:** Adicionado `boot-completed.sh` para KernelSU. O media scanning agora usa o hook nativo do KernelSU em vez de polling manual com `sleep`.
+- **NOVO:** Adicionado `sepolicy.rule` com regras SELinux para audioserver, mediaserver e apps (Facebook, Gboard) lerem os arquivos montados.
+- **NOVO:** Detecção automática de metamodule durante a instalação no KernelSU. Avisa o usuário se `meta-overlayfs` não for encontrado.
+- **MELHORADO:** `service.sh` reescrito com lógica condicional — funciona como fallback completo no Magisk e modo leve no KernelSU.
+- **MELHORADO:** `post-fs-data.sh` simplificado para fazer apenas operações seguras no estágio pre-mount (limpeza de /data/).
+- **MELHORADO:** `customize.sh` agora usa `set_perm_recursive` com contexto SELinux explícito.
+- **MELHORADO:** Limpeza de cache do Gboard mais agressiva durante instalação (inclui emoji + superpacks).
+
 #### V1.3.1 Build for Module
 - **FIXED:** iOS Emojis not appearing on Gboard. The module now clears dynamically downloaded stock fonts (`/data/fonts/files`) and Gboard caches on boot and installation to enforce iOS emojis.
 
