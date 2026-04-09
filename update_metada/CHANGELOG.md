@@ -4,6 +4,17 @@
 
 # Changelogs
 
+#### V1.4.1 — Fix Definitivo de Emojis no Facebook, Messenger e Apps Meta
+- **CRÍTICO:** Facebook e Messenger ignoravam a substituição de emojis porque armazenam fontes em múltiplos diretórios internos, não apenas em `app_ras_blobs`.
+- **NOVO:** Abordagem nuclear — o módulo agora varre **TODOS** os arquivos `*emoji*.ttf` em `/data/data/` e `/data/user/0/` e os substitui pela fonte iOS.
+- **NOVO:** Desativação do Google Play Services Font Provider (`FontsProvider` + `UpdateSchedulerService`) que ficava re-baixando a fonte padrão do Android por trás, desfazendo o módulo.
+- **NOVO:** Limpeza de `/data/fonts/` e diretórios de fontes do GMS em todos os estágios de boot.
+- **NOVO:** Bloqueio do diretório de download de fontes do Messenger (`files/fonts`) com `chmod 000` para impedir re-downloads.
+- **NOVO:** Arquivos de emoji travados com `chattr +i` (imutáveis) para impedir que os apps da Meta sobrescrevam.
+- **NOVO:** Force-stop automático de todos os apps Meta após a substituição de emojis.
+- **NOVO:** Logging detalhado em `service.log` dentro da pasta do módulo para debug.
+- **MELHORADO:** Lista expandida de apps Meta: Facebook, Messenger, Facebook Lite, Messenger Lite, Instagram, InstaPro.
+
 #### V1.4.0 — Correção Total de Compatibilidade KernelSU / KernelSU Next / Magisk
 - **CRÍTICO:** Corrigido `system.prop` que usava line endings Windows (CRLF). O `resetprop` não interpreta CRLF, resultando em NENHUMA propriedade de som sendo aplicada. Convertido para LF (Unix).
 - **CRÍTICO:** Removidas flags obsoletas do Magisk antigo (`SKIPMOUNT`, `PROPFILE`, `POSTFSDATA`, `LATESTARTSERVICE`) do `customize.sh`. Estas eram ignoradas pelo KernelSU e Magisk moderno.
@@ -15,6 +26,7 @@
 - **MELHORADO:** `post-fs-data.sh` simplificado para fazer apenas operações seguras no estágio pre-mount (limpeza de /data/).
 - **MELHORADO:** `customize.sh` agora usa `set_perm_recursive` com contexto SELinux explícito.
 - **MELHORADO:** Limpeza de cache do Gboard mais agressiva durante instalação (inclui emoji + superpacks).
+- **FIXED:** Adicionado o Instagram (`com.instagram.android`, `com.instapro.android`) na lista que usa os emojis baseados no `FacebookEmoji.ttf` para sobrescrever a renderização individual (`app_ras_blobs`) dos apps da Meta.
 
 #### V1.3.1 Build for Module
 - **FIXED:** iOS Emojis not appearing on Gboard. The module now clears dynamically downloaded stock fonts (`/data/fonts/files`) and Gboard caches on boot and installation to enforce iOS emojis.

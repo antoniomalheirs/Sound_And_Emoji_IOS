@@ -2,53 +2,79 @@
 # Sound_And_Emoji_IOS — post-mount.sh
 # Executed AFTER OverlayFS/MagicMount has mounted all module files.
 #
-# This is the correct stage for operations that depend on module files
-# being visible in /system/ (e.g., bind mounting custom fonts).
-#
 # SUPPORTED BY: KernelSU, KernelSU Next, APatch
 # NOT SUPPORTED BY: Magisk (fallback is in service.sh)
 
 MODDIR="${0%/*}"
 
 # ─── Variables ───────────────────────────────────────────────────────
-# After OverlayFS mount, our NotoColorEmoji.ttf is now visible at
-# /system/fonts/. We use it as the source for Facebook emoji override.
 EMOJI_SOURCE="/system/fonts/NotoColorEmoji.ttf"
-EMOJI_SOURCE_MOD="$MODDIR/system/fonts/FacebookEmoji.ttf"
+EMOJI_SOURCE_MOD="$MODDIR/system/fonts/NotoColorEmoji.ttf"
 
-# ─── Helper Functions ────────────────────────────────────────────────
+# Meta app packages
+META_APPS="com.facebook.katana com.facebook.orca com.facebook.lite com.facebook.mlite com.instagram.android com.instapro.android"
 
-package_installed() {
-  pm list packages 2>/dev/null | grep -q "^package:${1}$"
-}
+# ─── Determine best emoji source ────────────────────────────────────
+SOURCE=""
+if [ -f "$EMOJI_SOURCE" ]; then
+  SOURCE="$EMOJI_SOURCE"
+elif [ -f "$EMOJI_SOURCE_MOD" ]; then
+  SOURCE="$EMOJI_SOURCE_MOD"
+fi
 
-mount_facebook_emoji() {
-  local pkg="$1"
-  local blob_dir="/data/data/${pkg}/app_ras_blobs"
+if [ -z "$SOURCE" ]; then
+  exit 0
+fi
 
-  # Only mount if the package is installed and has the blob directory
-  if package_installed "$pkg" && [ -d "$blob_dir" ]; then
-    # Prefer the mounted system font, fallback to module directory
-    local source_file=""
-    if [ -f "$EMOJI_SOURCE" ]; then
-      source_file="$EMOJI_SOURCE"
-    elif [ -f "$EMOJI_SOURCE_MOD" ]; then
-      source_file="$EMOJI_SOURCE_MOD"
-    fi
+# ─── 1. NUCLEAR: Replace ALL *emoji*.ttf files in ALL apps ──────────
+EMOJI_FONTS=$(find /data/data /data/user/0 -iname "*emoji*.ttf" 2>/dev/null)
+for font in $EMOJI_FONTS; do
+  chattr -i "$font" 2>/dev/null
+  cp -f "$SOURCE" "$font" 2>/dev/null
+  chmod 444 "$font" 2>/dev/null
+  chattr +i "$font" 2>/dev/null
+done
 
-    if [ -n "$source_file" ] && [ -f "${blob_dir}/FacebookEmoji.ttf" ]; then
-      mount -o bind "$source_file" "${blob_dir}/FacebookEmoji.ttf" 2>/dev/null
-      # Fix permissions after bind mount
-      chmod 644 "${blob_dir}/FacebookEmoji.ttf" 2>/dev/null
-      chcon u:object_r:app_data_file:s0 "${blob_dir}/FacebookEmoji.ttf" 2>/dev/null
-    fi
+# ─── 2. Lock Meta app emoji files (create if missing) ───────────────
+for pkg in $META_APPS; do
+  if [ ! -d "/data/data/$pkg" ]; then
+    continue
   fi
-}
 
-# ─── Facebook / Messenger Emoji Override ─────────────────────────────
-# Facebook apps store their own emoji font in /data/data/ (NOT /system/)
-# so they need manual bind mounts. This stage runs AFTER OverlayFS mount,
-# so our font files are now accessible.
+  target="/data/data/$pkg/app_ras_blobs/FacebookEmoji.ttf"
+  mkdir -p "/data/data/$pkg/app_ras_blobs" 2>/dev/null
 
-mount_facebook_emoji "com.facebook.orca"      # Messenger
-mount_facebook_emoji "com.facebook.katana"    # Facebook App
+  app_uid=$(stat -c "%u" "/data/data/$pkg" 2>/dev/null)
+  app_gid=$(stat -c "%g" "/data/data/$pkg" 2>/dev/null)
+
+  if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
+    chown $app_uid:$app_gid "/data/data/$pkg/app_ras_blobs" 2>/dev/null
+    chmod 755 "/data/data/$pkg/app_ras_blobs" 2>/dev/null
+  fi
+
+  chattr -i "$target" 2>/dev/null
+  cp -f "$SOURCE" "$target" 2>/dev/null
+
+  if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
+    chown $app_uid:$app_gid "$target" 2>/dev/null
+  fi
+
+  chmod 444 "$target" 2>/dev/null
+  chcon u:object_r:app_data_file:s0 "$target" 2>/dev/null
+  chattr +i "$target" 2>/dev/null
+done
+
+# ─── 3. Clean and block Messenger font caches ───────────────────────
+for dir in /data/data/com.facebook.orca/files/fonts /data/user/0/com.facebook.orca/files/fonts; do
+  if [ -d "$dir" ]; then
+    rm -rf "$dir"/* 2>/dev/null
+  fi
+  mkdir -p "$dir" 2>/dev/null
+  chmod 000 "$dir" 2>/dev/null
+done
+
+# ─── 4. Clean GMS font caches ───────────────────────────────────────
+rm -rf /data/fonts 2>/dev/null
+find /data -type d -path "*com.google.android.gms/files/fonts*" 2>/dev/null | while read dir; do
+  rm -rf "$dir" 2>/dev/null
+done
