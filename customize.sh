@@ -36,11 +36,13 @@ detect_environment() {
   fi
 }
 
-# ─── Main Installation ──────────────────────────────────────────────
+# Read version dynamically from module.prop to avoid hardcoded version mismatches
+MOD_VER=$(grep "^version=" "$MODPATH/module.prop" | cut -d= -f2)
+[ -z "$MOD_VER" ] && MOD_VER="unknown"
 
 ui_print " "
 ui_print "╔═══════════════════════════════════════╗"
-ui_print "║       Sound_And_Emoji_IOS v1.4.0      ║"
+ui_print "║       Sound_And_Emoji_IOS v${MOD_VER}      ║"
 ui_print "║          by SentinelData               ║"
 ui_print "╚═══════════════════════════════════════╝"
 ui_print " "

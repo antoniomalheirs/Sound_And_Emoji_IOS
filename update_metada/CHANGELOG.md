@@ -4,6 +4,10 @@
 
 # Changelogs
 
+#### V1.4.2 — Correção de Exibição de Versão na Instalação
+- **FIXED:** O banner de instalação exibia "v1.4.0" em vez de "v1.4.1" no `customize.sh`, fazendo o Magisk mostrar a versão errada na lista de módulos e impedindo o sistema de reconhecer a atualização.
+- **MELHORADO:** O banner de instalação agora lê a versão dinamicamente do `module.prop` em vez de usar um valor hardcoded, prevenindo esse tipo de bug em futuras releases.
+
 #### V1.4.1 — Fix Definitivo de Emojis no Facebook, Messenger e Apps Meta
 - **CRÍTICO:** Facebook e Messenger ignoravam a substituição de emojis porque armazenam fontes em múltiplos diretórios internos, não apenas em `app_ras_blobs`.
 - **NOVO:** Abordagem nuclear — o módulo agora varre **TODOS** os arquivos `*emoji*.ttf` em `/data/data/` e `/data/user/0/` e os substitui pela fonte iOS.
