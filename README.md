@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.4.1-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-1.4.3-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -248,7 +248,7 @@ graph TD
         B6[Wait for boot_completed] --> B7[Clear Gboard cache]
         B7 --> B8["Force resetprop ro.config.*"]
         B8 --> B9[Replace ALL emoji fonts globally]
-        B9 --> B10[Lock Meta emoji + chattr +i]
+        B9 --> B10[Lock Meta emoji]
         B10 --> B11[Disable GMS Font Provider]
         B11 --> B12["Media Scanner (Magisk only)"]
     end
@@ -318,7 +318,7 @@ The main runtime script. Waits for `sys.boot_completed=1` before executing.
 
 - **resetprop:** Force-sets 25+ `ro.config.*` sound properties that Android 14+ may overwrite during boot
 - **Global emoji replacement:** Scans ALL app directories for emoji font files and replaces them
-- **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chattr +i` (immutable)
+- **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chmod 444`
 - **GMS Font Provider disable:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services to prevent stock emoji re-download
 - **Media Scanner (Magisk):** Broadcasts `MEDIA_SCANNER_SCAN_FILE` intents for all audio files so they appear in Android's sound picker
 
@@ -419,7 +419,7 @@ Meta apps (Facebook, Instagram, Messenger) use their own bundled emoji font (`Fa
 ```mermaid
 graph LR
     A["🔍 Find ALL *emoji*.ttf<br/>in /data/data/ & /data/user/0/"] --> B["📝 Replace with<br/>iOS emoji font"]
-    B --> C["🔒 chattr +i<br/>(immutable flag)"]
+    B --> C["🔒 Apply permissions<br/>(chmod 444)"]
     C --> D["🚫 Block Messenger<br/>font downloads<br/>(chmod 000)"]
     D --> E["⛔ Disable GMS<br/>FontsProvider"]
     E --> F["🔄 Force-stop<br/>Meta apps"]
@@ -500,7 +500,7 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 1. Force-stop the app
 2. Check `service.log` for errors
-3. Verify that the emoji file has the immutable flag: `lsattr /data/data/com.facebook.katana/app_ras_blobs/FacebookEmoji.ttf` — should show `----i`
+3. Verify that the emoji file has read-only permissions: `ls -l /data/data/com.facebook.katana/app_ras_blobs/FacebookEmoji.ttf` — should show `-r--r--r--`
 4. If not, reboot — the module re-applies on every boot
 
 </details>
@@ -529,14 +529,11 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v1.4.1
+### Latest: v1.4.3
 
-- **Nuclear emoji replacement:** Module now scans ALL `*emoji*.ttf` files across all app directories
-- **GMS Font Provider disabled:** Prevents Google Play Services from re-downloading stock emojis
-- **Immutable flag:** Emoji files locked with `chattr +i` to prevent app overwrites
-- **Messenger font block:** Download directory blocked with `chmod 000`
-- **Detailed logging:** `service.log` created in module directory for debugging
-- **Expanded Meta app support:** Facebook, Messenger, FB Lite, Messenger Lite, Instagram, InstaPro
+- **HyperOS/Dual Apps Support:** Scans all user profiles (`/data/user/*`) to ensure Instagram and other Meta apps in Dual Apps have their emojis replaced correctly.
+- **Enhanced Meta Block:** Blocks the font download directory (`files/fonts`) for all Meta apps across all user profiles to prevent silent redownloads.
+- **Crash Fix:** Removed `chattr +i` (immutable flag) from emoji files to prevent Instagram from crashing.
 
 ---
 

@@ -4,6 +4,11 @@
 
 # Changelogs
 
+#### V1.4.3 — Suporte a HyperOS (Dual Apps) e Fix de Bloqueio de Emojis
+- **NOVO:** Suporte a "Apps Duplos" (Dual Apps) do HyperOS e MIUI. O módulo agora itera sobre `/data/user/*` em vez de apenas `/data/user/0/`, garantindo que os emojis sejam substituídos nos aplicativos secundários.
+- **MELHORADO:** O bloqueio da pasta de download de fontes (`files/fonts`) agora se aplica a todos os apps da Meta (Facebook, Instagram, Messenger, Lite) e em todos os perfis de usuários, impedindo totalmente o re-download da fonte original sem causar crashes.
+
+
 #### V1.4.2 — Correção de Exibição de Versão na Instalação
 - **FIXED:** O banner de instalação exibia "v1.4.0" em vez de "v1.4.1" no `customize.sh`, fazendo o Magisk mostrar a versão errada na lista de módulos e impedindo o sistema de reconhecer a atualização.
 - **MELHORADO:** O banner de instalação agora lê a versão dinamicamente do `module.prop` em vez de usar um valor hardcoded, prevenindo esse tipo de bug em futuras releases.
@@ -14,7 +19,7 @@
 - **NOVO:** Desativação do Google Play Services Font Provider (`FontsProvider` + `UpdateSchedulerService`) que ficava re-baixando a fonte padrão do Android por trás, desfazendo o módulo.
 - **NOVO:** Limpeza de `/data/fonts/` e diretórios de fontes do GMS em todos os estágios de boot.
 - **NOVO:** Bloqueio do diretório de download de fontes do Messenger (`files/fonts`) com `chmod 000` para impedir re-downloads.
-- **NOVO:** Arquivos de emoji travados com `chattr +i` (imutáveis) para impedir que os apps da Meta sobrescrevam.
+- **FIXED:** Removido o uso de `chattr +i` (imutável) nos arquivos de emoji, que estava causando crash no Instagram (Permissão Negada). O bloqueio agora depende apenas de permissões de arquivo.
 - **NOVO:** Force-stop automático de todos os apps Meta após a substituição de emojis.
 - **NOVO:** Logging detalhado em `service.log` dentro da pasta do módulo para debug.
 - **MELHORADO:** Lista expandida de apps Meta: Facebook, Messenger, Facebook Lite, Messenger Lite, Instagram, InstaPro.

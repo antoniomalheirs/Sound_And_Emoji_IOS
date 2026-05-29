@@ -19,7 +19,7 @@ log() {
 }
 
 log "================================================"
-log "Sound_And_Emoji_IOS v1.4.0 service.sh"
+log "Sound_And_Emoji_IOS v1.4.3 service.sh"
 log "Device: $(getprop ro.product.model)"
 log "Android: $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk))"
 log "================================================"
@@ -108,8 +108,8 @@ replace_all_emoji_fonts() {
     return
   fi
 
-  # Find ALL .ttf files with "emoji" in their name across /data/data and /data/user
-  EMOJI_FONTS=$(find /data/data /data/user/0 -iname "*emoji*.ttf" 2>/dev/null)
+  # Find ALL .ttf files with "emoji" in their name across /data/data and /data/user/*
+  EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null)
 
   if [ -z "$EMOJI_FONTS" ]; then
     log "INFO: No emoji .ttf files found in app data."
@@ -118,12 +118,9 @@ replace_all_emoji_fonts() {
 
   for font in $EMOJI_FONTS; do
     log "INFO: Replacing: $font"
-    # Remove immutable flag if previously set
-    chattr -i "$font" 2>/dev/null
     cp -f "$EMOJI_SOURCE" "$font" 2>/dev/null
     chmod 444 "$font" 2>/dev/null
-    chattr +i "$font" 2>/dev/null
-    log "INFO: Replaced and locked: $font"
+    log "INFO: Replaced: $font"
   done
 
   log "INFO: Global emoji font replacement completed."
@@ -136,54 +133,55 @@ lock_meta_emoji() {
   log "INFO: Locking Meta app emoji files..."
 
   for pkg in $META_APPS; do
-    if [ ! -d "/data/data/$pkg" ]; then
-      continue
-    fi
+    USERS=$(ls -d /data/data /data/user/* 2>/dev/null)
+    for userpath in $USERS; do
+      if [ ! -d "$userpath/$pkg" ]; then
+        continue
+      fi
 
-    local target="/data/data/$pkg/app_ras_blobs/FacebookEmoji.ttf"
-    mkdir -p "/data/data/$pkg/app_ras_blobs" 2>/dev/null
+      local target="$userpath/$pkg/app_ras_blobs/FacebookEmoji.ttf"
+      mkdir -p "$userpath/$pkg/app_ras_blobs" 2>/dev/null
 
-    local app_uid=$(stat -c "%u" "/data/data/$pkg" 2>/dev/null)
-    local app_gid=$(stat -c "%g" "/data/data/$pkg" 2>/dev/null)
+      local app_uid=$(stat -c "%u" "$userpath/$pkg" 2>/dev/null)
+      local app_gid=$(stat -c "%g" "$userpath/$pkg" 2>/dev/null)
 
-    if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
-      chown $app_uid:$app_gid "/data/data/$pkg/app_ras_blobs" 2>/dev/null
-      chmod 755 "/data/data/$pkg/app_ras_blobs" 2>/dev/null
-    fi
+      if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
+        chown $app_uid:$app_gid "$userpath/$pkg/app_ras_blobs" 2>/dev/null
+        chmod 755 "$userpath/$pkg/app_ras_blobs" 2>/dev/null
+      fi
 
-    chattr -i "$target" 2>/dev/null
-    cp -f "$EMOJI_SOURCE" "$target" 2>/dev/null
+      cp -f "$EMOJI_SOURCE" "$target" 2>/dev/null
 
-    if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
-      chown $app_uid:$app_gid "$target" 2>/dev/null
-    fi
+      if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
+        chown $app_uid:$app_gid "$target" 2>/dev/null
+      fi
 
-    chmod 444 "$target" 2>/dev/null
-    chcon u:object_r:app_data_file:s0 "$target" 2>/dev/null
-    chattr +i "$target" 2>/dev/null
+      chmod 444 "$target" 2>/dev/null
+      chcon u:object_r:app_data_file:s0 "$target" 2>/dev/null
 
-    log "INFO: Locked emoji for $pkg"
+      log "INFO: Replaced emoji for $pkg in $userpath"
+    done
   done
 }
 
 lock_meta_emoji
 
-# ─── 3. Clean Messenger-specific font caches ────────────────────────
-log "INFO: Cleaning Messenger font caches..."
+# ─── 3. Clean and block Meta font caches ────────────────────────
+log "INFO: Cleaning and blocking Meta apps font caches..."
 
-MESSENGER_FONT_DIRS="/data/data/com.facebook.orca/files/fonts /data/user/0/com.facebook.orca/files/fonts"
-for dir in $MESSENGER_FONT_DIRS; do
-  if [ -d "$dir" ]; then
-    rm -rf "$dir"/* 2>/dev/null
-    log "INFO: Cleaned: $dir"
-  fi
-done
-
-# Block Messenger from re-downloading emoji fonts
-for dir in $MESSENGER_FONT_DIRS; do
-  mkdir -p "$dir" 2>/dev/null
-  chmod 000 "$dir" 2>/dev/null
-  log "INFO: Blocked font downloads: $dir"
+for pkg in $META_APPS; do
+  USERS=$(ls -d /data/data /data/user/* 2>/dev/null)
+  for userpath in $USERS; do
+    dir="$userpath/$pkg/files/fonts"
+    if [ -d "$dir" ]; then
+      rm -rf "$dir"/* 2>/dev/null
+      log "INFO: Cleaned: $dir"
+    fi
+    # Block Meta apps from re-downloading emoji fonts
+    mkdir -p "$dir" 2>/dev/null
+    chmod 000 "$dir" 2>/dev/null
+    log "INFO: Blocked font downloads: $dir"
+  done
 done
 
 # ─── 4. Force-stop Meta apps ────────────────────────────────────────
