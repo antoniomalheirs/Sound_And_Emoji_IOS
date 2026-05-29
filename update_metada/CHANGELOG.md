@@ -4,58 +4,57 @@
 
 # Changelogs
 
-#### V1.4.4 — Suporte a HyperOS (Dual Apps) e Fix Crítico de Stories
-- **NOVO:** Suporte a "Apps Duplos" (Dual Apps) do HyperOS e MIUI. O módulo agora itera sobre `/data/user/*` em vez de apenas `/data/user/0/`, garantindo que os emojis sejam substituídos nos aplicativos secundários.
-- **CORREÇÃO CRÍTICA (Stories):** O bloqueio da pasta de fontes (`files/fonts`) foi revertido para afetar APENAS o Messenger (`com.facebook.orca`). O bloqueio global estava impedindo o Instagram de carregar fontes de tipografia no Modo Story, o que fazia o teclado desaparecer ao tentar digitar.
+#### V1.4.4 — HyperOS (Dual Apps) Support & Critical Stories Fix
+- **NEW:** Support for HyperOS and MIUI "Dual Apps". The module now iterates over `/data/user/*` instead of just `/data/user/0/`, ensuring emojis are replaced in cloned/secondary applications.
+- **CRITICAL FIX (Stories):** The font download directory block (`files/fonts`) has been reverted to affect ONLY Messenger (`com.facebook.orca`). The global block was preventing Instagram from loading typography fonts in Story Mode, which caused the keyboard to disappear when trying to type.
 
+#### V1.4.2 — Version Display Fix on Installation
+- **FIXED:** The installation banner was displaying "v1.4.0" instead of "v1.4.1" in `customize.sh`, causing Magisk to show the wrong version in the module list and preventing the system from recognizing the update.
+- **IMPROVED:** The installation banner now dynamically reads the version from `module.prop` instead of using a hardcoded value, preventing this type of bug in future releases.
 
-#### V1.4.2 — Correção de Exibição de Versão na Instalação
-- **FIXED:** O banner de instalação exibia "v1.4.0" em vez de "v1.4.1" no `customize.sh`, fazendo o Magisk mostrar a versão errada na lista de módulos e impedindo o sistema de reconhecer a atualização.
-- **MELHORADO:** O banner de instalação agora lê a versão dinamicamente do `module.prop` em vez de usar um valor hardcoded, prevenindo esse tipo de bug em futuras releases.
+#### V1.4.1 — Definitive Emoji Fix for Facebook, Messenger, and Meta Apps
+- **CRITICAL:** Facebook and Messenger were ignoring the emoji replacement because they store fonts in multiple internal directories, not just in `app_ras_blobs`.
+- **NEW:** Nuclear approach — the module now scans **ALL** `*emoji*.ttf` files in `/data/data/` and `/data/user/0/` and replaces them with the iOS font.
+- **NEW:** Disabled the Google Play Services Font Provider (`FontsProvider` + `UpdateSchedulerService`) that was re-downloading the default Android font in the background, undoing the module's changes.
+- **NEW:** Cleaned `/data/fonts/` and GMS font directories across all boot stages.
+- **NEW:** Blocked the Messenger font download directory (`files/fonts`) with `chmod 000` to prevent re-downloads.
+- **FIXED:** Removed the use of `chattr +i` (immutable) on emoji files, which was causing crashes on Instagram (Permission Denied). The lock now relies solely on file permissions.
+- **NEW:** Automatic force-stop of all Meta apps after emoji replacement.
+- **NEW:** Detailed logging in `service.log` within the module folder for debugging.
+- **IMPROVED:** Expanded list of Meta apps: Facebook, Messenger, Facebook Lite, Messenger Lite, Instagram, InstaPro.
 
-#### V1.4.1 — Fix Definitivo de Emojis no Facebook, Messenger e Apps Meta
-- **CRÍTICO:** Facebook e Messenger ignoravam a substituição de emojis porque armazenam fontes em múltiplos diretórios internos, não apenas em `app_ras_blobs`.
-- **NOVO:** Abordagem nuclear — o módulo agora varre **TODOS** os arquivos `*emoji*.ttf` em `/data/data/` e `/data/user/0/` e os substitui pela fonte iOS.
-- **NOVO:** Desativação do Google Play Services Font Provider (`FontsProvider` + `UpdateSchedulerService`) que ficava re-baixando a fonte padrão do Android por trás, desfazendo o módulo.
-- **NOVO:** Limpeza de `/data/fonts/` e diretórios de fontes do GMS em todos os estágios de boot.
-- **NOVO:** Bloqueio do diretório de download de fontes do Messenger (`files/fonts`) com `chmod 000` para impedir re-downloads.
-- **FIXED:** Removido o uso de `chattr +i` (imutável) nos arquivos de emoji, que estava causando crash no Instagram (Permissão Negada). O bloqueio agora depende apenas de permissões de arquivo.
-- **NOVO:** Force-stop automático de todos os apps Meta após a substituição de emojis.
-- **NOVO:** Logging detalhado em `service.log` dentro da pasta do módulo para debug.
-- **MELHORADO:** Lista expandida de apps Meta: Facebook, Messenger, Facebook Lite, Messenger Lite, Instagram, InstaPro.
-
-#### V1.4.0 — Correção Total de Compatibilidade KernelSU / KernelSU Next / Magisk
-- **CRÍTICO:** Corrigido `system.prop` que usava line endings Windows (CRLF). O `resetprop` não interpreta CRLF, resultando em NENHUMA propriedade de som sendo aplicada. Convertido para LF (Unix).
-- **CRÍTICO:** Removidas flags obsoletas do Magisk antigo (`SKIPMOUNT`, `PROPFILE`, `POSTFSDATA`, `LATESTARTSERVICE`) do `customize.sh`. Estas eram ignoradas pelo KernelSU e Magisk moderno.
-- **CRÍTICO:** Adicionado `post-mount.sh` para KernelSU/KernelSU Next. Os bind mounts do Facebook emoji estavam no `post-fs-data.sh`, que executa ANTES do OverlayFS montar — fazendo com que os arquivos fonte não existissem.
-- **NOVO:** Adicionado `boot-completed.sh` para KernelSU. O media scanning agora usa o hook nativo do KernelSU em vez de polling manual com `sleep`.
-- **NOVO:** Adicionado `sepolicy.rule` com regras SELinux para audioserver, mediaserver e apps (Facebook, Gboard) lerem os arquivos montados.
-- **NOVO:** Detecção automática de metamodule durante a instalação no KernelSU. Avisa o usuário se `meta-overlayfs` não for encontrado.
-- **MELHORADO:** `service.sh` reescrito com lógica condicional — funciona como fallback completo no Magisk e modo leve no KernelSU.
-- **MELHORADO:** `post-fs-data.sh` simplificado para fazer apenas operações seguras no estágio pre-mount (limpeza de /data/).
-- **MELHORADO:** `customize.sh` agora usa `set_perm_recursive` com contexto SELinux explícito.
-- **MELHORADO:** Limpeza de cache do Gboard mais agressiva durante instalação (inclui emoji + superpacks).
-- **FIXED:** Adicionado o Instagram (`com.instagram.android`, `com.instapro.android`) na lista que usa os emojis baseados no `FacebookEmoji.ttf` para sobrescrever a renderização individual (`app_ras_blobs`) dos apps da Meta.
+#### V1.4.0 — Full Compatibility Fix for KernelSU / KernelSU Next / Magisk
+- **CRITICAL:** Fixed `system.prop` that used Windows line endings (CRLF). `resetprop` does not interpret CRLF, resulting in NO sound properties being applied. Converted to LF (Unix).
+- **CRITICAL:** Removed obsolete flags from legacy Magisk (`SKIPMOUNT`, `PROPFILE`, `POSTFSDATA`, `LATESTARTSERVICE`) from `customize.sh`. These were ignored by KernelSU and modern Magisk.
+- **CRITICAL:** Added `post-mount.sh` for KernelSU/KernelSU Next. The Facebook emoji bind mounts were in `post-fs-data.sh`, which executes BEFORE OverlayFS mounts — causing the source files to not exist.
+- **NEW:** Added `boot-completed.sh` for KernelSU. Media scanning now uses the native KernelSU hook instead of manual polling with `sleep`.
+- **NEW:** Added `sepolicy.rule` with SELinux rules for audioserver, mediaserver, and apps (Facebook, Gboard) to read the mounted files.
+- **NEW:** Automatic metamodule detection during KernelSU installation. Warns the user if `meta-overlayfs` is not found.
+- **IMPROVED:** `service.sh` rewritten with conditional logic — works as a full fallback in Magisk and lightweight mode in KernelSU.
+- **IMPROVED:** `post-fs-data.sh` simplified to only perform safe pre-mount stage operations (/data/ cleanup).
+- **IMPROVED:** `customize.sh` now uses `set_perm_recursive` with an explicit SELinux context.
+- **IMPROVED:** More aggressive Gboard cache cleanup during installation (includes emoji + superpacks).
+- **FIXED:** Added Instagram (`com.instagram.android`, `com.instapro.android`) to the list of apps that use `FacebookEmoji.ttf` to overwrite the individual rendering (`app_ras_blobs`) of Meta apps.
 
 #### V1.3.1 Build for Module
 - **FIXED:** iOS Emojis not appearing on Gboard. The module now clears dynamically downloaded stock fonts (`/data/fonts/files`) and Gboard caches on boot and installation to enforce iOS emojis.
 
-#### V1.3.0 — Update Major: Forçando Scan de Mídia (Correção KernelSU/OverlayFS)
-- **CRÍTICO:** Usuários de KernelSU Next com OverlayFS ativo reportaram que notificações, alarmes e toques ainda não apareciam na interface de Configurações, mesmo com metadados corretos.
-- **MOTIVO ROOT:** O KernelSU OverlayFS sobrepõe (monta) as pastas de mídia **depois** que o Android já ligou e fez o scan inicial de arquivos (`MediaScanner`). Sendo assim, o Android passa reto pela pasta antes dos nossos arquivos existirem ali e considera que a pasta está vazia.
-- **SOLUÇÃO:** Criado mecanismo dinâmico de `service.sh` (Late Start Service). Agora o módulo aguarda o celular terminar todo o ciclo de boot, dá um respiro de 10 segundos para a interface carregar, e dispara `Intents` de Broadcast silenciosos ordenando que o MediaStore indexe um por um manualmente todos os nossos áudios `.ogg` e `.wav`. Assim o Android lista tudo na hora que os Ajustes forem abertos.
-- **CRÍTICO:** Usuários relataram que Alarmes, Notificações e Toques não apareciam na lista de Configurações do Android. 
-- **SOLUÇÃO:** O Android MediaStore moderno exige que os arquivos de áudio tenham obrigatoriamente a tag de metadados legível `TITLE` injetada dentro do binário do arquivo, caso contrário ele oculta o som da interface de configurações. A partir dessa versão, todos os 76 arquivos (`.ogg` e `.wav`) foram injetados com tags ID3 (ex: `Title: iOS Default Ringtone`), garantindo que eles apareçam instantaneamente no menu de seleção de qualquer sistema.
-- **CRÍTICO / NOVO:** Em ROMs muito recentes como Axion OS (Android 16 QPR1) ou interfaces fortemente modificadas pela Xiaomi (HyperOS/MIUI), o sistema parou de ler cegamente a pasta `/ui/` e passou a ler configurações escritas em pedra no `build.prop` (`ro.config.*_sound`).
-- **SOLUÇÃO:** O módulo agora faz injeção ativa de `system.prop`. Ele sobrescreve as propriedades globais do Android no momento em que o celular liga. Agora nós *ordenamos* explicitamente que o Android 15/16 use os arquivos do módulo, independentemente de qual celular ou Custom ROM você esteja usando (ex: `ro.config.lock_sound=ui/Lock.ogg`, `ro.config.wireless_charging_started_sound=...`).
-- **NOVO:** Para garantir 100% de compatibilidade com câmeras OEM e ROMs Custom (como o usuário solicitou), **todos os 38 sons agora possuem DUAS versões: `.ogg` e `.wav`**. Isso cobre tanto o código-fonte puro do AOSP quanto ROMs de fabricantes que exigem áudios em formato não comprimido (`.wav`).
-- **NOVO:** Adicionada rotina de *Aliasing* no script de instalação. Algumas ROMs leem `lock.ogg` (minúsculo) e outras `Lock.ogg` (maiúsculo). O sistema Android é case-sensitive. Agora, o módulo espelha proativamente `Lock` -> `lock`, `Unlock` -> `unlock` e `camera_click` -> `camera_shutter` direto no Android, de modo cego, garantindo que a ROM sempre ache o clique!
-- **CRÍTICO:** Os arquivos de áudio originais `.m4a` da Apple continham arte de capa (cover art). Quando foram convertidos para `.ogg`, o `ffmpeg` preservou essas imagens como "streams de vídeo" dentro do arquivo de áudio. A arquitetura de som do Android (SoundPool) rejeita imediatamente qualquer arquivo de sistema que tenha múltiplas streams ou componentes de vídeo. 
-- **SOLUÇÃO:** Todos os 38 arquivos foram re-encodados de forma pura (strict áudio), removendo streams de vídeo clandestinos e metadados incompatíveis. Agora são arquivos OGG Vorbis limpos, garantidos para tocar no Android.
-- **CRÍTICO:** Adicionada definição de contexto SELinux (`u:object_r:system_file:s0`) a todos os áudios e fontes. Sem isso, o `mediaserver` do Android não tinha permissão para ler os arquivos e os sons originais não eram substituídos.
-- **CRÍTICO:** Corrigido bug onde a verificação dupla de API do Android falhava (retornava `""`), impedindo com que a pasta correta fosse usada na instalação.
-- **MELHORADO:** Garantido que sons serão sempre instalados. Se a API for ≤11 ou desconhecida, o módulo agora força o espelhamento de `system/product/media` para `system/media` para ter certeza absoluta do funcionamento.
-- **Melhoria Geral:** Substituição total de todos os áudios por originais verificados do iOS em `.ogg` Vorbis (44100Hz).
+#### V1.3.0 — Major Update: Forcing Media Scan (KernelSU/OverlayFS Fix)
+- **CRITICAL:** KernelSU Next users with active OverlayFS reported that notifications, alarms, and ringtones were still not appearing in the Settings interface, even with correct metadata.
+- **ROOT CAUSE:** KernelSU OverlayFS overlays (mounts) the media folders **after** Android has already booted and done the initial file scan (`MediaScanner`). Therefore, Android skips the folder before our files exist there and considers the folder empty.
+- **SOLUTION:** Created a dynamic mechanism in `service.sh` (Late Start Service). The module now waits for the phone to finish the entire boot cycle, pauses for 10 seconds for the interface to load, and fires silent Broadcast `Intents` ordering the MediaStore to manually index all our `.ogg` and `.wav` audio files one by one. This ensures Android lists everything when Settings are opened.
+- **CRITICAL:** Users reported that Alarms, Notifications, and Ringtones were not appearing in the Android Settings list.
+- **SOLUTION:** The modern Android MediaStore requires audio files to have the readable `TITLE` metadata tag injected into the file binary, otherwise it hides the sound from the settings interface. As of this version, all 76 files (`.ogg` and `.wav`) have been injected with ID3 tags (e.g., `Title: iOS Default Ringtone`), ensuring they instantly appear in any system's selection menu.
+- **CRITICAL / NEW:** On very recent ROMs like Axion OS (Android 16 QPR1) or interfaces heavily modified by Xiaomi (HyperOS/MIUI), the system stopped blindly reading the `/ui/` folder and started reading hardcoded configurations in `build.prop` (`ro.config.*_sound`).
+- **SOLUTION:** The module now actively injects `system.prop`. It overwrites global Android properties the moment the phone boots. We now explicitly *order* Android 15/16 to use the module files, regardless of which phone or Custom ROM you are using (e.g., `ro.config.lock_sound=ui/Lock.ogg`, `ro.config.wireless_charging_started_sound=...`).
+- **NEW:** To ensure 100% compatibility with OEM cameras and Custom ROMs (as requested by the user), **all 38 sounds now have TWO versions: `.ogg` and `.wav`**. This covers both pure AOSP source code and manufacturer ROMs that require uncompressed audio (`.wav`).
+- **NEW:** Added an *Aliasing* routine in the installation script. Some ROMs read `lock.ogg` (lowercase) and others `Lock.ogg` (uppercase). The Android system is case-sensitive. Now, the module proactively mirrors `Lock` -> `lock`, `Unlock` -> `unlock` and `camera_click` -> `camera_shutter` directly in Android blindly, ensuring the ROM always finds the click!
+- **CRITICAL:** The original Apple `.m4a` audio files contained cover art. When converted to `.ogg`, `ffmpeg` preserved these images as "video streams" within the audio file. Android's sound architecture (SoundPool) immediately rejects any system file that has multiple streams or video components.
+- **SOLUTION:** All 38 files were purely re-encoded (strict audio), removing clandestine video streams and incompatible metadata. They are now clean OGG Vorbis files, guaranteed to play on Android.
+- **CRITICAL:** Added SELinux context definition (`u:object_r:system_file:s0`) to all audios and fonts. Without this, Android's `mediaserver` didn't have permission to read the files and the original sounds weren't replaced.
+- **CRITICAL:** Fixed a bug where the double Android API check failed (returned `""`), preventing the correct folder from being used during installation.
+- **IMPROVED:** Guaranteed that sounds will always be installed. If the API is ≤11 or unknown, the module now forces mirroring of `system/product/media` to `system/media` to be absolutely certain it works.
+- **General Improvement:** Total replacement of all audios with verified iOS originals in `.ogg` Vorbis (44100Hz).
 - **FIXED:** Camera, camera focus, and screenshot sounds were not being replaced due to incorrect file names.
   - Renamed `CameraClick.ogg` → `camera_click.ogg` (matches AOSP `audio_assets.xml`)
   - Renamed `CameraFocus.ogg` → `camera_focus.ogg`
