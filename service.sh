@@ -19,7 +19,7 @@ log() {
 }
 
 log "================================================"
-log "Sound_And_Emoji_IOS v1.4.3 service.sh"
+log "Sound_And_Emoji_IOS v1.4.4 service.sh"
 log "Device: $(getprop ro.product.model)"
 log "Android: $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk))"
 log "================================================"
@@ -166,10 +166,11 @@ lock_meta_emoji() {
 
 lock_meta_emoji
 
-# ─── 3. Clean and block Meta font caches ────────────────────────
-log "INFO: Cleaning and blocking Meta apps font caches..."
+# ─── 3. Clean and block Messenger font caches ────────────────────────
+log "INFO: Cleaning and blocking Messenger font caches..."
 
-for pkg in $META_APPS; do
+MESSENGER_APPS="com.facebook.orca"
+for pkg in $MESSENGER_APPS; do
   USERS=$(ls -d /data/data /data/user/* 2>/dev/null)
   for userpath in $USERS; do
     dir="$userpath/$pkg/files/fonts"
@@ -177,7 +178,7 @@ for pkg in $META_APPS; do
       rm -rf "$dir"/* 2>/dev/null
       log "INFO: Cleaned: $dir"
     fi
-    # Block Meta apps from re-downloading emoji fonts
+    # Block Messenger from re-downloading emoji fonts
     mkdir -p "$dir" 2>/dev/null
     chmod 000 "$dir" 2>/dev/null
     log "INFO: Blocked font downloads: $dir"

@@ -4,9 +4,9 @@
 
 # Changelogs
 
-#### V1.4.3 — Suporte a HyperOS (Dual Apps) e Fix de Bloqueio de Emojis
+#### V1.4.4 — Suporte a HyperOS (Dual Apps) e Fix Crítico de Stories
 - **NOVO:** Suporte a "Apps Duplos" (Dual Apps) do HyperOS e MIUI. O módulo agora itera sobre `/data/user/*` em vez de apenas `/data/user/0/`, garantindo que os emojis sejam substituídos nos aplicativos secundários.
-- **MELHORADO:** O bloqueio da pasta de download de fontes (`files/fonts`) agora se aplica a todos os apps da Meta (Facebook, Instagram, Messenger, Lite) e em todos os perfis de usuários, impedindo totalmente o re-download da fonte original sem causar crashes.
+- **CORREÇÃO CRÍTICA (Stories):** O bloqueio da pasta de fontes (`files/fonts`) foi revertido para afetar APENAS o Messenger (`com.facebook.orca`). O bloqueio global estava impedindo o Instagram de carregar fontes de tipografia no Modo Story, o que fazia o teclado desaparecer ao tentar digitar.
 
 
 #### V1.4.2 — Correção de Exibição de Versão na Instalação

@@ -63,8 +63,9 @@ for pkg in $META_APPS; do
   done
 done
 
-# ─── 3. Clean and block Meta font caches ──────────────
-for pkg in $META_APPS; do
+# ─── 3. Clean and block Messenger font caches ──────────────
+MESSENGER_APPS="com.facebook.orca"
+for pkg in $MESSENGER_APPS; do
   USERS=$(ls -d /data/data /data/user/* 2>/dev/null)
   for userpath in $USERS; do
     dir="$userpath/$pkg/files/fonts"
