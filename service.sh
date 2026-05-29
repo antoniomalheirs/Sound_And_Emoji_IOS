@@ -19,7 +19,7 @@ log() {
 }
 
 log "================================================"
-log "Sound_And_Emoji_IOS v1.4.4 service.sh"
+log "Sound_And_Emoji_IOS v1.4.5 service.sh"
 log "Device: $(getprop ro.product.model)"
 log "Android: $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk))"
 log "================================================"
@@ -108,8 +108,11 @@ replace_all_emoji_fonts() {
     return
   fi
 
-  # Find ALL .ttf files with "emoji" in their name across /data/data and /data/user/*
-  EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null)
+  # Find ALL .ttf files with "emoji" in their name, EXCLUDING Meta apps.
+  # Meta apps are handled precisely in Step 2 (only app_ras_blobs/FacebookEmoji.ttf).
+  # Replacing other internal emoji files breaks Instagram Stories emoji picker.
+  EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
+    | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.")
 
   if [ -z "$EMOJI_FONTS" ]; then
     log "INFO: No emoji .ttf files found in app data."

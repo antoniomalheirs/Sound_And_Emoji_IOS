@@ -26,8 +26,11 @@ if [ -z "$SOURCE" ]; then
   exit 0
 fi
 
-# ─── 1. NUCLEAR: Replace ALL *emoji*.ttf files in ALL apps ──────────
-EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null)
+# ─── 1. Replace ALL *emoji*.ttf files in non-Meta apps ──────────────
+# Meta apps are handled precisely in Step 2 (only app_ras_blobs/FacebookEmoji.ttf).
+# Replacing other internal emoji files breaks Instagram Stories emoji picker.
+EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
+  | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.")
 for font in $EMOJI_FONTS; do
   cp -f "$SOURCE" "$font" 2>/dev/null
   chmod 444 "$font" 2>/dev/null

@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.4.4-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-1.4.5-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -529,8 +529,9 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v1.4.4
+### Latest: v1.4.5
 
+- **Instagram Stories Fix:** Excluded Meta apps from the global emoji font scan to fix the emoji picker flickering/closing in Stories.
 - **HyperOS/Dual Apps Support:** Scans all user profiles (`/data/user/*`) to ensure Instagram and other Meta apps in Dual Apps have their emojis replaced correctly.
 - **Messenger font block:** Blocks the font download directory (`files/fonts`) for Messenger across all user profiles (`/data/user/*`) to prevent silent redownloads.
 - **Crash Fix:** Removed `chattr +i` (immutable flag) from emoji files to prevent Instagram from crashing.

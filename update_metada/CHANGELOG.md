@@ -4,9 +4,10 @@
 
 # Changelogs
 
-#### V1.4.4 — HyperOS (Dual Apps) Support & Critical Stories Fix
+#### V1.4.5 — Instagram Stories Emoji Picker Fix & HyperOS Dual Apps Support
+- **CRITICAL FIX (Stories Emoji Picker):** Excluded Meta app directories from the global emoji font scan (`find *emoji*.ttf`). The nuclear replacement was overwriting internal Instagram emoji resources beyond `FacebookEmoji.ttf`, which broke the emoji picker in Stories mode (keyboard would flicker open/closed). Meta apps are now handled exclusively by the targeted `app_ras_blobs/FacebookEmoji.ttf` replacement.
 - **NEW:** Support for HyperOS and MIUI "Dual Apps". The module now iterates over `/data/user/*` instead of just `/data/user/0/`, ensuring emojis are replaced in cloned/secondary applications.
-- **CRITICAL FIX (Stories):** The font download directory block (`files/fonts`) has been reverted to affect ONLY Messenger (`com.facebook.orca`). The global block was preventing Instagram from loading typography fonts in Story Mode, which caused the keyboard to disappear when trying to type.
+- **CRITICAL FIX (Stories Keyboard):** The font download directory block (`files/fonts`) has been reverted to affect ONLY Messenger (`com.facebook.orca`). The global block was preventing Instagram from loading typography fonts in Story Mode, which caused the keyboard to disappear when trying to type.
 
 #### V1.4.2 — Version Display Fix on Installation
 - **FIXED:** The installation banner was displaying "v1.4.0" instead of "v1.4.1" in `customize.sh`, causing Magisk to show the wrong version in the module list and preventing the system from recognizing the update.
