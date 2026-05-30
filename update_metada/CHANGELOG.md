@@ -4,8 +4,15 @@
 
 # Changelogs
 
+#### V1.4.7 — The REAL Stories Keyboard Flicker Fix (AOSP & Custom ROMs)
+- **CRITICAL FIX (SwiftKey / Gboard Crash in Stories):** The keyboard flicker issue when replying to Stories was actually caused by the module aggressively replacing the internal emoji fonts of third-party keyboards (`com.touchtype.swiftkey` and `com.google.android.inputmethod.latin`). When Instagram Stories triggered a rich-text response, the keyboard tried to load its internal font, encountered a locked 30MB file, and crashed. Keyboards have now been EXCLUDED from the internal `/data/data` scan. They will now safely fall back to the system iOS font without crashing.
+
+#### V1.4.6 — The Ultimate HyperOS Instagram Crash Fix (Emoji Watcher Daemon)
+- **CRITICAL FIX (HyperOS Stories Crash):** Completely solved the Instagram Stories crash/flicker when replying with emojis. On HyperOS, setting `FacebookEmoji.ttf` to read-only (`chmod 444`) caused an unhandled `Permission Denied` exception in the app's font downloader, crashing the input connection. The file is now fully writable (`chmod 644`) so Instagram's downloader succeeds without crashing.
+- **NEW (Meta Emoji Watcher Daemon):** Since the file is now writable, Instagram will try to redownload and overwrite the iOS emojis with the Android ones. To counter this, `service.sh` now spawns an extremely lightweight background daemon that silently watches for font overwrites and instantly restores the iOS emojis, ensuring permanent iOS emojis without breaking the app.
+
 #### V1.4.5 — Instagram Stories Emoji Picker Fix & HyperOS Dual Apps Support
-- **CRITICAL FIX (Stories Emoji Picker):** Excluded Meta app directories from the global emoji font scan (`find *emoji*.ttf`). The nuclear replacement was overwriting internal Instagram emoji resources beyond `FacebookEmoji.ttf`, which broke the emoji picker in Stories mode (keyboard would flicker open/closed). Meta apps are now handled exclusively by the targeted `app_ras_blobs/FacebookEmoji.ttf` replacement.
+- **CRITICAL FIX (SwiftKey/Gboard Crash in Stories):** Changed the SELinux context of the replaced `FacebookEmoji.ttf` from `app_data_file` to `system_file`. Previously, when the Instagram Stories editor passed the font to third-party keyboards to render the emoji picker, the keyboard's process was blocked by SELinux from reading Instagram's private app data, causing the keyboard to crash and flicker instantly. It now works flawlessly.
 - **NEW:** Support for HyperOS and MIUI "Dual Apps". The module now iterates over `/data/user/*` instead of just `/data/user/0/`, ensuring emojis are replaced in cloned/secondary applications.
 - **CRITICAL FIX (Stories Keyboard):** The font download directory block (`files/fonts`) has been reverted to affect ONLY Messenger (`com.facebook.orca`). The global block was preventing Instagram from loading typography fonts in Story Mode, which caused the keyboard to disappear when trying to type.
 

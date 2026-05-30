@@ -108,11 +108,11 @@ replace_all_emoji_fonts() {
     return
   fi
 
-  # Find ALL .ttf files with "emoji" in their name, EXCLUDING Meta apps.
-  # Meta apps are handled precisely in Step 2 (only app_ras_blobs/FacebookEmoji.ttf).
-  # Replacing other internal emoji files breaks Instagram Stories emoji picker.
-  EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
-    | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.")
+# ─── 1. Replace emoji fonts globally in /data/data (excluding Meta apps and Keyboards) ─
+# We exclude Keyboards (SwiftKey, Gboard) because replacing their internal fonts can cause the keyboard to crash (flicker) when opening the emoji panel.
+log "INFO: Scanning for emoji fonts in /data/data..."
+EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
+  | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.|com\.touchtype\.swiftkey|com\.google\.android\.inputmethod")
 
   if [ -z "$EMOJI_FONTS" ]; then
     log "INFO: No emoji .ttf files found in app data."
@@ -159,8 +159,8 @@ lock_meta_emoji() {
         chown $app_uid:$app_gid "$target" 2>/dev/null
       fi
 
-      chmod 444 "$target" 2>/dev/null
-      chcon u:object_r:app_data_file:s0 "$target" 2>/dev/null
+      chmod 644 "$target" 2>/dev/null
+      chcon u:object_r:system_file:s0 "$target" 2>/dev/null
 
       log "INFO: Replaced emoji for $pkg in $userpath"
     done
@@ -241,6 +241,46 @@ if [ "$IS_KSU" = false ]; then
   scan_media "/system/media/audio"
   log "INFO: Media scan completed (Magisk fallback)."
 fi
+
+# ─── 8. Meta Emoji Watcher Daemon ─────────────────────────────────────
+# Instagram Stories crash on HyperOS if FacebookEmoji.ttf is chmod 444 (read-only)
+# because the app attempts to update the font and throws an unhandled permission exception.
+# To prevent the crash, we use chmod 644 so the update succeeds. Then, this background
+# daemon instantly restores the iOS emoji font silently.
+start_emoji_watcher() {
+  log "INFO: Starting Meta Emoji Watcher Daemon..."
+  (
+    while true; do
+      for pkg in $META_APPS; do
+        USERS=$(ls -d /data/data /data/user/* 2>/dev/null)
+        for userpath in $USERS; do
+          target="$userpath/$pkg/app_ras_blobs/FacebookEmoji.ttf"
+          if [ -f "$target" ]; then
+            source_size=$(stat -c "%s" "$EMOJI_SOURCE" 2>/dev/null)
+            target_size=$(stat -c "%s" "$target" 2>/dev/null)
+            
+            if [ -n "$source_size" ] && [ -n "$target_size" ] && [ "$source_size" != "$target_size" ]; then
+              log "WATCHER: Detected font change in $pkg. Restoring iOS emoji..."
+              cp -f "$EMOJI_SOURCE" "$target" 2>/dev/null
+              
+              app_uid=$(stat -c "%u" "$userpath/$pkg" 2>/dev/null)
+              app_gid=$(stat -c "%g" "$userpath/$pkg" 2>/dev/null)
+              if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
+                chown $app_uid:$app_gid "$target" 2>/dev/null
+              fi
+              
+              chmod 644 "$target" 2>/dev/null
+              chcon u:object_r:system_file:s0 "$target" 2>/dev/null
+            fi
+          fi
+        done
+      done
+      sleep 10
+    done
+  ) &
+}
+
+start_emoji_watcher
 
 log "INFO: Service completed."
 log "================================================"

@@ -26,11 +26,11 @@ if [ -z "$SOURCE" ]; then
   exit 0
 fi
 
-# ─── 1. Replace ALL *emoji*.ttf files in non-Meta apps ──────────────
-# Meta apps are handled precisely in Step 2 (only app_ras_blobs/FacebookEmoji.ttf).
-# Replacing other internal emoji files breaks Instagram Stories emoji picker.
+# ─── 1. Replace emoji fonts globally in /data/data (excluding Meta apps and Keyboards) ─
+# We exclude Keyboards (SwiftKey, Gboard) because replacing their internal fonts can cause the keyboard to crash (flicker) when opening the emoji panel.
+log "INFO: Scanning for emoji fonts in /data/data..."
 EMOJI_FONTS=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
-  | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.")
+  | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.|com\.touchtype\.swiftkey|com\.google\.android\.inputmethod")
 for font in $EMOJI_FONTS; do
   cp -f "$SOURCE" "$font" 2>/dev/null
   chmod 444 "$font" 2>/dev/null
@@ -61,8 +61,8 @@ for pkg in $META_APPS; do
       chown $app_uid:$app_gid "$target" 2>/dev/null
     fi
 
-    chmod 444 "$target" 2>/dev/null
-    chcon u:object_r:app_data_file:s0 "$target" 2>/dev/null
+    chmod 644 "$target" 2>/dev/null
+    chcon u:object_r:system_file:s0 "$target" 2>/dev/null
   done
 done
 

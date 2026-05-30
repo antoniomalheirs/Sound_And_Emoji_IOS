@@ -529,9 +529,18 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v1.4.5
+### Latest: v1.4.7
 
-- **Instagram Stories Fix:** Excluded Meta apps from the global emoji font scan to fix the emoji picker flickering/closing in Stories.
+- **Keyboard Flicker Fix (AOSP/Custom ROMs):** Excluded keyboard apps (SwiftKey, Gboard) from internal font replacement. This stops the keyboard from crashing when opening the emoji panel to reply to an Instagram Story.
+
+### Previous: v1.4.6
+
+- **HyperOS Instagram Stories Crash Fix:** Changed permissions of `FacebookEmoji.ttf` to `644` to prevent an unhandled permission exception during Instagram's font validation checks.
+- **Meta Emoji Watcher Daemon:** Added an ultra-lightweight background daemon to `service.sh` that actively watches for Instagram's attempts to revert the iOS emojis and silently restores them.
+
+### Previous: v1.4.5
+
+- **Stories Keyboard Crash Fix:** Changed the SELinux context of the Instagram emoji font from `app_data_file` to `system_file`. This allows third-party keyboards (like SwiftKey/Gboard) to read the font when passed by the Instagram Stories editor, preventing the keyboard from crashing and flickering.
 - **HyperOS/Dual Apps Support:** Scans all user profiles (`/data/user/*`) to ensure Instagram and other Meta apps in Dual Apps have their emojis replaced correctly.
 - **Messenger font block:** Blocks the font download directory (`files/fonts`) for Messenger across all user profiles (`/data/user/*`) to prevent silent redownloads.
 - **Crash Fix:** Removed `chattr +i` (immutable flag) from emoji files to prevent Instagram from crashing.
