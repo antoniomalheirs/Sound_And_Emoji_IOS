@@ -4,6 +4,10 @@
 
 # Changelogs
 
+#### V1.4.8 — Absolute Native EmojiCompat Crash Fix (The Real Solution)
+- **CRITICAL FIX (Instagram Stories Keyboard Crash):** We finally found the true root cause! When you reply to a Story, Instagram activates `EmojiCompat` and tries to load the `FacebookEmoji.ttf` font into the keyboard. However, our 30MB custom iOS font is incompatible with the strict `EmojiCompat` parser, causing a native crash that instantly closes the keyboard. 
+- **The Solution:** The module now injects `Roboto-Regular.ttf` (a standard, non-emoji system text font) instead of the 30MB iOS font into Instagram. When Instagram's `EmojiCompat` parses Roboto, it safely realizes it has no emojis and gracefully falls back to the system font (which is our iOS NotoColorEmoji) without crashing. The watcher daemon was also updated to maintain this dummy font. You get permanent iOS emojis in Stories, and the keyboard will never crash again!
+
 #### V1.4.7 — The REAL Stories Keyboard Flicker Fix (AOSP & Custom ROMs)
 - **CRITICAL FIX (SwiftKey / Gboard Crash in Stories):** The keyboard flicker issue when replying to Stories was actually caused by the module aggressively replacing the internal emoji fonts of third-party keyboards (`com.touchtype.swiftkey` and `com.google.android.inputmethod.latin`). When Instagram Stories triggered a rich-text response, the keyboard tried to load its internal font, encountered a locked 30MB file, and crashed. Keyboards have now been EXCLUDED from the internal `/data/data` scan. They will now safely fall back to the system iOS font without crashing.
 

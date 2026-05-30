@@ -529,7 +529,11 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v1.4.7
+### Latest: v1.4.8
+
+- **Absolute Keyboard Flicker Fix:** Replaced the Instagram `FacebookEmoji.ttf` with a standard text font (`Roboto-Regular`) to safely bypass a native `EmojiCompat` crash when replying to Stories, gracefully forcing the app to fall back to the system iOS emojis.
+
+### Previous: v1.4.7
 
 - **Keyboard Flicker Fix (AOSP/Custom ROMs):** Excluded keyboard apps (SwiftKey, Gboard) from internal font replacement. This stops the keyboard from crashing when opening the emoji panel to reply to an Instagram Story.
 

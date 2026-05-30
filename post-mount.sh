@@ -55,7 +55,9 @@ for pkg in $META_APPS; do
       chmod 755 "$userpath/$pkg/app_ras_blobs" 2>/dev/null
     fi
 
-    cp -f "$SOURCE" "$target" 2>/dev/null
+    # We use Roboto as a dummy font. Instagram's EmojiCompat parser crashes on 30MB custom fonts.
+    # By using a text font, the parser fails safely and falls back to the system iOS emojis without crashing!
+    cp -f "/system/fonts/Roboto-Regular.ttf" "$target" 2>/dev/null
 
     if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
       chown $app_uid:$app_gid "$target" 2>/dev/null

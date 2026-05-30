@@ -1,7 +1,7 @@
 id=Sound_And_Emoji_IOS
 name=Sound_And_Emoji_IOS
-version=v1.4.7
-versionCode=147
+version=v1.4.8
+versionCode=148
 author=SentinelData
 description=iOS Sounds, Emojis & SF Pro Font for Magisk, KernelSU, KernelSU Next & APatch
 updateJson=https://raw.githubusercontent.com/antoniomalheirs/Sound_And_Emoji_IOS/main/update_metada/update.json

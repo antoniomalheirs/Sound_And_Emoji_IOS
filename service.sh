@@ -153,7 +153,9 @@ lock_meta_emoji() {
         chmod 755 "$userpath/$pkg/app_ras_blobs" 2>/dev/null
       fi
 
-      cp -f "$EMOJI_SOURCE" "$target" 2>/dev/null
+      # We use Roboto as a dummy font. Instagram's EmojiCompat parser crashes on 30MB custom fonts.
+      # By using a text font, the parser fails safely and falls back to the system iOS emojis without crashing!
+      cp -f "/system/fonts/Roboto-Regular.ttf" "$target" 2>/dev/null
 
       if [ -n "$app_uid" ] && [ -n "$app_gid" ]; then
         chown $app_uid:$app_gid "$target" 2>/dev/null
@@ -256,12 +258,12 @@ start_emoji_watcher() {
         for userpath in $USERS; do
           target="$userpath/$pkg/app_ras_blobs/FacebookEmoji.ttf"
           if [ -f "$target" ]; then
-            source_size=$(stat -c "%s" "$EMOJI_SOURCE" 2>/dev/null)
+            source_size=$(stat -c "%s" "/system/fonts/Roboto-Regular.ttf" 2>/dev/null)
             target_size=$(stat -c "%s" "$target" 2>/dev/null)
             
             if [ -n "$source_size" ] && [ -n "$target_size" ] && [ "$source_size" != "$target_size" ]; then
-              log "WATCHER: Detected font change in $pkg. Restoring iOS emoji..."
-              cp -f "$EMOJI_SOURCE" "$target" 2>/dev/null
+              log "WATCHER: Detected font change in $pkg. Restoring dummy font..."
+              cp -f "/system/fonts/Roboto-Regular.ttf" "$target" 2>/dev/null
               
               app_uid=$(stat -c "%u" "$userpath/$pkg" 2>/dev/null)
               app_gid=$(stat -c "%g" "$userpath/$pkg" 2>/dev/null)
