@@ -4,6 +4,9 @@
 
 # Changelogs
 
+#### V1.4.9 — Absolute EmojiCompat Font Fallback Fix (AOSP & HyperOS)
+- **CRITICAL FIX (GMS EmojiCompat Crash):** In previous versions, the module disabled the Google Play Services (GMS) Font Provider to stop Android from redownloading standard emojis. However, when Instagram's `EmojiCompat` fails to load our dummy font, it falls back to GMS to request an emoji update. Because GMS was disabled, this fallback triggered an unhandled exception, causing the keyboard to crash on AOSP. GMS Font Provider is now **re-enabled**, but its font directory (`/data/fonts`) is locked to prevent it from saving Android emojis. This allows Instagram's fallback routine to fail safely and gracefully switch to the system iOS emojis without crashing.
+
 #### V1.4.8 — Absolute Native EmojiCompat Crash Fix (The Real Solution)
 - **CRITICAL FIX (Instagram Stories Keyboard Crash):** We finally found the true root cause! When you reply to a Story, Instagram activates `EmojiCompat` and tries to load the `FacebookEmoji.ttf` font into the keyboard. However, our 30MB custom iOS font is incompatible with the strict `EmojiCompat` parser, causing a native crash that instantly closes the keyboard. 
 - **The Solution:** The module now injects `Roboto-Regular.ttf` (a standard, non-emoji system text font) instead of the 30MB iOS font into Instagram. When Instagram's `EmojiCompat` parses Roboto, it safely realizes it has no emojis and gracefully falls back to the system font (which is our iOS NotoColorEmoji) without crashing. The watcher daemon was also updated to maintain this dummy font. You get permanent iOS emojis in Stories, and the keyboard will never crash again!

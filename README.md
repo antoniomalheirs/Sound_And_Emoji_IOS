@@ -529,7 +529,11 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v1.4.8
+### Latest: v1.4.9
+
+- **GMS Emoji Fallback Fix:** Re-enabled the Google Play Services Font Provider to fix a crash that occurred when Instagram attempted to fall back to GMS for font loading. Locked the `/data/fonts` directory to prevent GMS from overriding the iOS system emojis.
+
+### Previous: v1.4.8
 
 - **Absolute Keyboard Flicker Fix:** Replaced the Instagram `FacebookEmoji.ttf` with a standard text font (`Roboto-Regular`) to safely bypass a native `EmojiCompat` crash when replying to Stories, gracefully forcing the app to fall back to the system iOS emojis.
 

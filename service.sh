@@ -197,28 +197,29 @@ for app in $META_APPS; do
 done
 sleep 2
 
-# ─── 5. Disable GMS Font Provider (prevents stock emoji re-download) ─
-disable_gms_fonts() {
-  log "INFO: Disabling GMS font services..."
-
+# ─── 5. Enable GMS Font Provider (needed for fallback) ────────────────
+enable_gms_fonts() {
+  log "INFO: Re-enabling GMS font services to prevent fallback crashes..."
   USERS=$(ls -d /data/user/* 2>/dev/null)
-
   for userpath in $USERS; do
     USERID=${userpath##*/}
-    pm disable --user "$USERID" "$GMS_FONT_PROVIDER" >/dev/null 2>&1
-    pm disable --user "$USERID" "$GMS_FONT_UPDATER" >/dev/null 2>&1
-    log "INFO: Disabled GMS font services for user $USERID"
+    pm enable --user "$USERID" "$GMS_FONT_PROVIDER" >/dev/null 2>&1
+    pm enable --user "$USERID" "$GMS_FONT_UPDATER" >/dev/null 2>&1
   done
 }
 
-disable_gms_fonts
+enable_gms_fonts
 
-# ─── 6. Clean GMS generated fonts and /data/fonts ───────────────────
-log "INFO: Cleaning GMS and system font caches..."
-rm -rf /data/fonts 2>/dev/null
+# ─── 6. Clean and Block /data/fonts ───────────────────
+log "INFO: Cleaning and blocking system font caches..."
+rm -rf /data/fonts/* 2>/dev/null
+mkdir -p /data/fonts 2>/dev/null
+chmod 000 /data/fonts 2>/dev/null
+
 find /data -type d -path "*com.google.android.gms/files/fonts*" 2>/dev/null | while read dir; do
-  rm -rf "$dir" 2>/dev/null
-  log "INFO: Removed GMS font dir: $dir"
+  rm -rf "$dir"/* 2>/dev/null
+  chmod 000 "$dir" 2>/dev/null
+  log "INFO: Blocked GMS font dir: $dir"
 done
 
 # ─── 7. Magisk-only: Media Scanner Fallback ─────────────────────────
