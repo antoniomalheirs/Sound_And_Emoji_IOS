@@ -4,6 +4,31 @@
 
 # Changelogs
 
+#### V2.0.4 — Bootloop Emergency Fix & Clean Partition Mounting
+- **CRITICAL FIX (Emergency Bootloop Resolution):** Completely eliminated all `mount -o bind` attempts from `post-fs-data.sh` and `post-mount.sh`. On Android 16, running manual bind mounts on `/system` or `/product` during early boot clashed with Magisk/KernelSU's OverlayFS/Magic Mount engines and violated the 10-second init timeout, causing immediate bootloops. All pre-boot scripts are now strictly non-mounting, safe, and lightning fast.
+- **CRITICAL FIX (Gboard Configuration Protection):** Cleaned only Gboard's downloaded emoji packages (`files/emoji` and `files/superpacks/emoji`) once during installation without touching `shared_prefs` or settings databases, preserving "Sound on keypress" (Som ao tocar nas teclas) and custom layouts.
+
+#### V2.0.3 — Definitive Fix for Keyboards (Sounds & Emojis) & Pre-Boot Font Ingestion
+- **CRITICAL FIX (Keyboard Sounds & Emojis):** Resolved keyboard sound failure and emoji rendering issues on AOSP/Axion OS Android 16. Wiping Gboard's superpacks and using aggressive `chmod 000` on system font directories broke Gboard's sound preference and caused FontManagerService crashes. Caches are now safely cleaned without corrupting permissions or deleting keyboard preferences.
+- **CRITICAL FIX (Pre-Boot Font & Audio Bind Mounts in `post-fs-data.sh`):** Emojis (`NotoColorEmoji.ttf`, `NotoColorEmojiFlags.ttf`, etc.) and UI sounds are now bind-mounted directly in `post-fs-data.sh` BEFORE Zygote and SystemServer start. This guarantees that ART, FontManagerService, and AudioService inherit the iOS fonts and sounds across all app processes and keyboards from the first frame.
+- **NEW (Full Lowercase Keypress Audio Aliases):** Added comprehensive lowercase keypress aliases (`keypress_standard.ogg`, `keypress_spacebar.ogg`, `keypress_delete.ogg`, `keypress_return.ogg`, `keypress_invalid.ogg`, `Keypress_*.ogg`) to ensure compatibility with AOSP, Pixel, and third-party keyboard engines.
+- **NEW (Sound Effects & SettingsProvider Reliability):** `sound_effects_enabled` and `dtmf_tone` are now enforced for both the system and active user (`--user 0`), and sound properties are set both immediately and re-applied post-boot.
+
+#### V2.0.2 — Absolute Android 15/16 & AOSP Custom ROM Compatibility Update
+- **CRITICAL FIX (Restored System Font Lock):** Restored the `chmod 000` permission lock on `/data/fonts/` and Google Play Services (`GMS`) font directories across `post-fs-data.sh`, `post-mount.sh`, `service.sh`, and `customize.sh`. This prevents Android's Updatable Font system (`FontManagerService`) and GMS from downloading and enforcing stock Google emojis over the module.
+- **CRITICAL FIX (Gboard Superpacks Purge):** Gboard's downloaded emoji superpacks (`files/emoji` and `files/superpacks/emoji*`) are now purged across all user profiles on installation and boot, forcing Gboard to render system iOS emojis.
+- **NEW (Fail-safe Dynamic Bind Mounts):** Implemented `bind_if_different` in `post-mount.sh` and `service.sh`. If OverlayFS or Magic Mount fails to overlay `/product` or `/system` on dynamic EROFS partitions (Android 15/16 / KernelSU without metamodules), the module dynamically bind-mounts the iOS emoji font and UI sound files directly over the system inodes before Zygote/SystemUI start.
+- **NEW (Unconditional Lowercase UI Sounds):** All lowercase and AOSP audio aliases (`lock.ogg`, `unlock.ogg`, `effect_tick.ogg`, `touch.ogg`, `dock.ogg`, `undock.ogg`) are now created unconditionally for all ROMs and mirrored post-link.
+- **NEW (SettingsProvider Injection):** Injects `Settings.Global.LOCK_SOUND` and `UNLOCK_SOUND` post-boot to ensure `KeyguardViewMediator` immediately switches to iOS lock sounds, and toggles sound effects to reload the AudioService SoundPool.
+- **NEW (Unconditional Companion Emoji Fonts):** `NotoColorEmojiFlags.ttf` and `NotoColorEmojiLegacy.ttf` are linked and mirrored to `/product/fonts`, `/system/product/fonts`, `/system_ext/fonts`, and `/system/fonts` unconditionally.
+
+#### V2.0.1 — Universal Partition & OEM Compatibility Update
+- **NEW (Universal Partition Support):** Fully supports `/system_ext`, `/vendor`, `/odm`, `/omc`, `/prism`, and standalone `/product` partitions. The module now automatically detects active partitions and mirrors all iOS sound files to them, ensuring compatibility with custom ROMs that alter the storage structure (e.g. LemonUI).
+- **NEW (Robust OEM & ROM Detection):** Implemented multi-layered OEM detection verifying manufacturer, brand, fingerprints, display IDs, and package names. Reliably detects Samsung, Xiaomi, OPPO/OnePlus, LG, Huawei/Honor, Nothing, Vivo/iQOO, and Motorola devices, even if custom ROMs strip standard properties.
+- **NEW (Unconditional OEM Sound Mapping):** Audio link mapping is now unconditionally applied based on the detected manufacturer, ensuring iOS UI sounds are correctly linked without checking if the ROM's original files exist in AOSP-only directories.
+- **NEW (Universal Font Mirroring):** Dynamically mirrors iOS emoji fonts to alternative partitions (`/system_ext/fonts`, `/product/fonts`, `/vendor/fonts`) when present.
+- **NEW (Comprehensive Diagnostic Logs):** Added extensive path detection logs and file visibility checks to `service.log` to simplify troubleshooting of system mount/overlay issues.
+
 #### V1.4.9 — Absolute EmojiCompat Font Fallback Fix (AOSP & HyperOS)
 - **CRITICAL FIX (GMS EmojiCompat Crash):** In previous versions, the module disabled the Google Play Services (GMS) Font Provider to stop Android from redownloading standard emojis. However, when Instagram's `EmojiCompat` fails to load our dummy font, it falls back to GMS to request an emoji update. Because GMS was disabled, this fallback triggered an unhandled exception, causing the keyboard to crash on AOSP. GMS Font Provider is now **re-enabled**, but its font directory (`/data/fonts`) is locked to prevent it from saving Android emojis. This allows Instagram's fallback routine to fail safely and gracefully switch to the system iOS emojis without crashing.
 
