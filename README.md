@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.4-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.5-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -529,7 +529,12 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.4
+### Latest: v2.0.5
+
+- **Touch Sound Preference Preserved (Issue #9):** Removed forced `sound_effects_enabled=1` and `dtmf_tone=1` from `service.sh` and `boot-completed.sh`. The module no longer overrides user settings on reboot.
+- **Emoji Persistence (Issue #8):** Extended the background Emoji Watcher Daemon in `service.sh` to monitor and clean `/data/fonts/files/`, wipe Google Play Services font caches, and continuously re-apply iOS emojis across apps without CPU overhead.
+
+### Previous: v2.0.4
 
 - **Universal Android 11~16 & AOSP Support:** Full compatibility with Android 16 (Baklava), Axion AOSP, and custom ROMs without bootloop risks.
 - **Safe Pre-Boot & Audio Aliases:** Zero-mount safe `post-fs-data.sh` and `post-mount.sh` execution, complete lowercase keypress audio aliases, and dual-phase `SettingsProvider` and `resetprop` injection.

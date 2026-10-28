@@ -193,12 +193,7 @@ if [ -n "$AUDIO_BASE" ]; then
   settings put system lock_sound "${AUDIO_BASE}/ui/${LOCK_FILE}" 2>/dev/null
   settings put system unlock_sound "${AUDIO_BASE}/ui/${UNLOCK_FILE}" 2>/dev/null
 
-  # Enable sound effects for system and current user
-  settings put system sound_effects_enabled 1 2>/dev/null
-  settings put system --user 0 sound_effects_enabled 1 2>/dev/null
-  settings put system dtmf_tone 1 2>/dev/null
-  settings put system --user 0 dtmf_tone 1 2>/dev/null
-  log "INFO: SettingsProvider updated with lock/unlock and sound effects enabled."
+  log "INFO: SettingsProvider updated with lock/unlock sound paths."
 fi
 
 
@@ -448,6 +443,7 @@ start_emoji_watcher() {
     IOS_SIZE=$(wc -c < "$IOS_EMOJI_PATH" 2>/dev/null | tr -d ' ')
 
     while true; do
+      # ── 1. Monitor Meta apps (FacebookEmoji.ttf in app_ras_blobs) ──
       for userpath in /data/data /data/user/*; do
         [ ! -d "$userpath" ] && continue
         for ras_dir in "$userpath"/*/app_ras_blobs; do
@@ -482,6 +478,51 @@ start_emoji_watcher() {
           fi
         done
       done
+
+      # ── 2. Clean system dynamic font updates (GMS re-downloads) ──
+      # If /data/fonts/files/ has any content, GMS or Mainline re-downloaded
+      # stock emoji fonts — wipe them so the system falls back to our overlay.
+      if [ -d "/data/fonts/files" ]; then
+        local dyn_count=$(ls -1A /data/fonts/files/ 2>/dev/null | wc -l)
+        if [ "$dyn_count" -gt 0 ]; then
+          log "WATCHER: Dynamic font updates detected ($dyn_count files). Cleaning..."
+          rm -rf /data/fonts/files/* 2>/dev/null
+          rm -f /data/system/font_config.xml 2>/dev/null
+        fi
+      fi
+
+      # ── 3. Clean GMS font caches (Google Play Services emoji re-fetch) ──
+      for gms_dir in /data/data/com.google.android.gms/files/fonts /data/user/*/com.google.android.gms/files/fonts; do
+        if [ -d "$gms_dir" ]; then
+          local gms_count=$(ls -1A "$gms_dir" 2>/dev/null | wc -l)
+          if [ "$gms_count" -gt 0 ]; then
+            log "WATCHER: GMS font cache repopulated ($gms_count files). Cleaning..."
+            rm -rf "$gms_dir"/* 2>/dev/null
+          fi
+        fi
+      done
+
+      # ── 4. Re-apply global emoji replacement for all apps ──
+      # Scan for emoji fonts that apps may have re-downloaded since boot.
+      local g_replaced=0
+      EMOJI_FONTS_W=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \
+        | grep -v -E "com\.facebook\.|com\.instagram\.|com\.instapro\.|com\.aeroinsta\.|com\.gbinsta\.|com\.touchtype\.swiftkey|com\.google\.android\.inputmethod")
+      for font in $EMOJI_FONTS_W; do
+        if [ -f "$font" ]; then
+          local cur_sz=$(wc -c < "$font" 2>/dev/null | tr -d ' ')
+          if [ -n "$IOS_SIZE" ] && [ "$cur_sz" != "$IOS_SIZE" ]; then
+            local fowner=$(stat -c '%u:%g' "$(dirname "$font")" 2>/dev/null)
+            cp -f "$IOS_EMOJI_PATH" "$font" 2>/dev/null
+            [ -n "$fowner" ] && chown "$fowner" "$font" 2>/dev/null
+            chmod 644 "$font" 2>/dev/null
+            g_replaced=$((g_replaced + 1))
+          fi
+        fi
+      done
+      if [ "$g_replaced" -gt 0 ]; then
+        log "WATCHER: Re-applied iOS emoji to $g_replaced global app font(s)."
+      fi
+
       sleep 180
     done
   ) &

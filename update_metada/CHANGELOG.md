@@ -4,6 +4,13 @@
 
 # Changelogs
 
+#### V2.0.5 — Emoji Persistence & Touch Sound Preference Fix
+- **FIX (Issue #9 — Touch Sound Reactivates on Reboot):** Removed forced `sound_effects_enabled=1` and `dtmf_tone=1` from `service.sh` and `boot-completed.sh`. The module was overriding the user's preference on every reboot, re-enabling touch sounds even when the user had manually disabled them. The module now only defines **which** sounds to use (lock, unlock, keypress paths) without forcing **whether** sounds are enabled — the user's Settings preference is fully respected.
+- **FIX (Issue #8 — Emojis Break After a While):** Expanded the Emoji Watcher Daemon in `service.sh` with three new monitoring blocks that run every 3 minutes alongside the existing Meta/Facebook font watcher:
+  - **Dynamic Font Updates:** Detects and cleans `/data/fonts/files/` when Google Play Services or Android Mainline re-downloads stock emoji fonts in the background, forcing the system to fall back to the module's iOS overlay.
+  - **GMS Font Cache:** Monitors and cleans Google Play Services font caches (`/data/data/com.google.android.gms/files/fonts/`) that get repopulated after the initial boot cleanup.
+  - **Global App Emoji Re-application:** Scans all installed apps for `*emoji*.ttf` files that have been re-downloaded since boot and re-applies the iOS emoji font (using lightweight file size comparison, zero CPU overhead).
+
 #### V2.0.4 — Bootloop Emergency Fix & Clean Partition Mounting
 - **CRITICAL FIX (Emergency Bootloop Resolution):** Completely eliminated all `mount -o bind` attempts from `post-fs-data.sh` and `post-mount.sh`. On Android 16, running manual bind mounts on `/system` or `/product` during early boot clashed with Magisk/KernelSU's OverlayFS/Magic Mount engines and violated the 10-second init timeout, causing immediate bootloops. All pre-boot scripts are now strictly non-mounting, safe, and lightning fast.
 - **CRITICAL FIX (Gboard Configuration Protection):** Cleaned only Gboard's downloaded emoji packages (`files/emoji` and `files/superpacks/emoji`) once during installation without touching `shared_prefs` or settings databases, preserving "Sound on keypress" (Som ao tocar nas teclas) and custom layouts.

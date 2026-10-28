@@ -139,12 +139,7 @@ if [ -n "$AUDIO_BASE" ]; then
   settings put system lock_sound "${AUDIO_BASE}/ui/${lock_f}" 2>/dev/null
   settings put system unlock_sound "${AUDIO_BASE}/ui/${unlock_f}" 2>/dev/null
 
-  # Enable sound effects for system and current user
-  settings put system sound_effects_enabled 1 2>/dev/null
-  settings put system --user 0 sound_effects_enabled 1 2>/dev/null
-  settings put system dtmf_tone 1 2>/dev/null
-  settings put system --user 0 dtmf_tone 1 2>/dev/null
-  log "INFO: SettingsProvider updated and sound effects enabled."
+  log "INFO: SettingsProvider updated with lock/unlock sound paths."
 fi
 
 # ─── Media Indexing ──────────────────────────────────────────────────
