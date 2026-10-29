@@ -48,6 +48,25 @@ else
 fi
 log "INFO: Root manager detected: $ROOT_MGR"
 
+# ─── OPPO/OnePlus/Realme Detection ──────────────────────────────────
+# OxygenOS/ColorOS camera app (OplusCamera) breaks when camera sound
+# properties are overridden via resetprop. Detect these devices so we
+# can skip camera-specific property overrides at runtime.
+IS_OPPO=false
+OPPO_ROM=$(getprop ro.oplus.image.my_manifest 2>/dev/null)
+if [ -n "$OPPO_ROM" ]; then
+  IS_OPPO=true
+elif [ "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" = "oppo" ]; then
+  IS_OPPO=true
+elif [ "$(getprop ro.product.brand 2>/dev/null | tr '[:upper:]' '[:lower:]')" = "oneplus" ]; then
+  IS_OPPO=true
+elif [ "$(getprop ro.product.brand 2>/dev/null | tr '[:upper:]' '[:lower:]')" = "realme" ]; then
+  IS_OPPO=true
+elif [ "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" = "oplus" ]; then
+  IS_OPPO=true
+fi
+log "INFO: OPPO/OnePlus/Realme detected: $IS_OPPO"
+
 # ─── Universal Audio Base Path Detection ─────────────────────────────
 # Scan ALL possible audio locations to find where this device stores sounds.
 # This handles Samsung, Xiaomi, OPPO, and custom ROMs that use non-standard paths.
@@ -151,11 +170,16 @@ set_sound_props_for_base() {
   resetprop ro.config.sound_fx_keypress_delete "${base}/ui/${key_del}"
   resetprop ro.config.sound_fx_keypress_return "${base}/ui/${key_ret}"
   resetprop ro.config.sound_fx_keypress_invalid "${base}/ui/${key_inv}"
-  resetprop ro.config.camera_sound "${base}/ui/camera_click.ogg"
-  resetprop ro.config.camera_focus_sound "${base}/ui/camera_focus.ogg"
-  resetprop ro.config.camera_record_start "${base}/ui/VideoRecord.ogg"
-  resetprop ro.config.camera_record_stop "${base}/ui/VideoStop.ogg"
-  resetprop ro.config.shutter_sound "${base}/ui/camera_click.ogg"
+  # Camera & Recorder — skip on OPPO/OnePlus/Realme (breaks OplusCamera)
+  if [ "$IS_OPPO" != true ]; then
+    resetprop ro.config.camera_sound "${base}/ui/camera_click.ogg"
+    resetprop ro.config.camera_focus_sound "${base}/ui/camera_focus.ogg"
+    resetprop ro.config.camera_record_start "${base}/ui/VideoRecord.ogg"
+    resetprop ro.config.camera_record_stop "${base}/ui/VideoStop.ogg"
+    resetprop ro.config.shutter_sound "${base}/ui/camera_click.ogg"
+  else
+    log "INFO: Skipping camera sound props (OPPO/OnePlus/Realme detected)"
+  fi
   resetprop ro.config.low_battery_sound "${base}/ui/LowBattery.ogg"
   resetprop ro.config.charging_started_sound "${base}/ui/ChargingStarted.ogg"
   resetprop ro.config.charging_stopped_sound "${base}/ui/ChargingStopped.ogg"

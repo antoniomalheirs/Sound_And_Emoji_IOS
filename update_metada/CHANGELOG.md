@@ -4,6 +4,11 @@
 
 # Changelogs
 
+#### V2.0.7 — OxygenOS/ColorOS Camera Fix (OPPO/OnePlus/Realme)
+- **FIX (Issue #7 — Camera Breaks on OxygenOS/ColorOS):** The module was unconditionally overriding 5 camera sound system properties (`ro.config.camera_sound`, `ro.config.camera_focus_sound`, `ro.config.camera_record_start`, `ro.config.camera_record_stop`, `ro.config.shutter_sound`) via `resetprop` on ALL devices. On OxygenOS/ColorOS, the native camera app (OplusCamera) performs strict validation on these properties and breaks when they contain unexpected values.
+- **NEW (OPPO/OnePlus/Realme Runtime Detection):** Added OEM detection logic to `service.sh` and `boot-completed.sh` (matching the existing detection in `customize.sh`). Detects via `ro.oplus.image.my_manifest`, `ro.product.manufacturer` (oppo/oplus), and `ro.product.brand` (oneplus/realme).
+- **NEW (Conditional Camera Property Override):** Camera sound `resetprop` calls are now skipped on OPPO/OnePlus/Realme devices. These devices keep their native camera sounds while all other iOS sounds (UI, lock, unlock, keypress, NFC, battery, charging) continue to work normally. All other OEMs are unaffected — camera sound replacement works as before.
+
 #### V2.0.6 — Definitive Flag Emoji Fix & Font Download Lockdown
 - **FIX (Issue #8 — Flag Emojis Still Stock):** Flag emojis (🇧🇷🇺🇸🇫🇷 etc.) were still rendering as stock Android because Google Play Services' `UpdateSchedulerService` re-downloaded `NotoColorEmojiFlags.ttf` to `/data/fonts/files/`, which takes priority over the module's overlay in `/system/fonts/`. The V2.0.5 watcher cleaned these files every 3 minutes, but GMS re-downloaded them in seconds — flags stayed stock between cleanings.
 - **NEW (Immutable Font Directory Lock):** After cleaning `/data/fonts/files/`, the module now locks the directory with `chattr +i` (immutable attribute). The directory still exists (FontManagerService doesn't crash), but nothing can be created inside it — GMS physically cannot re-download stock emoji fonts. Applied in three stages: `post-fs-data.sh` (pre-boot), `service.sh` (boot), and the watcher daemon (ongoing verification).
