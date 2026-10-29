@@ -8,9 +8,9 @@
 MODDIR="${0%/*}"
 
 # ─── Clean OTA/Mainline downloaded font updates ───────────────────────
-# Remove downloaded Google font updates so the system falls back to module fonts
-# Then LOCK the directory to prevent GMS from re-downloading stock emoji fonts
-# (including NotoColorEmojiFlags.ttf which causes flag emojis to revert to stock)
+# Remove ALL downloaded Google font updates so the system falls back to
+# module overlay fonts in /system/fonts/. Then LOCK the directory to
+# prevent GMS from re-downloading stock emoji fonts.
 if [ -d /data/fonts/files ]; then
   chattr -i /data/fonts/files 2>/dev/null
   rm -rf /data/fonts/files/* 2>/dev/null

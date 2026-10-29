@@ -114,8 +114,12 @@ detect_audio_base
 GMS_FONT_PROVIDER="com.google.android.gms/com.google.android.gms.fonts.provider.FontsProvider"
 GMS_FONT_UPDATER="com.google.android.gms/com.google.android.gms.fonts.update.UpdateSchedulerService"
 
-# ─── Clean Dynamic System Font Caches & Lock Against Re-downloads ─────
-log "INFO: Cleaning and locking dynamic system font caches..."
+# ─── Clean Dynamic System Font Caches ─────────────────────────────────
+# Remove ALL downloaded Google font updates and LOCK the directory so GMS
+# cannot re-download stock emoji fonts. Our module overlay in /system/fonts/
+# already contains NotoColorEmoji.ttf and NotoColorEmojiFlags.ttf with iOS
+# flag bitmaps — clearing /data/fonts/files/ ensures the overlay wins.
+log "INFO: Cleaning dynamic font caches..."
 if [ -d /data/fonts/files ]; then
   chattr -i /data/fonts/files 2>/dev/null
   rm -rf /data/fonts/files/* 2>/dev/null
@@ -508,14 +512,13 @@ start_emoji_watcher() {
         done
       done
 
-      # ── 2. Clean & lock system dynamic font updates (GMS re-downloads) ──
-      # Lock /data/fonts/files/ with chattr +i so GMS cannot re-download
-      # stock emoji fonts (especially NotoColorEmojiFlags.ttf for flags).
+      # ── 2. Protect overlay fonts — keep /data/fonts/files/ clean & locked ──
+      # If GMS re-downloaded stock fonts, clean them out so our module overlay wins.
       if [ -d "/data/fonts/files" ]; then
         chattr -i /data/fonts/files 2>/dev/null
         local dyn_count=$(ls -1A /data/fonts/files/ 2>/dev/null | wc -l)
         if [ "$dyn_count" -gt 0 ]; then
-          log "WATCHER: Dynamic font updates detected ($dyn_count files). Cleaning..."
+          log "WATCHER: GMS font re-download detected ($dyn_count files). Cleaning..."
           rm -rf /data/fonts/files/* 2>/dev/null
           rm -f /data/system/font_config.xml 2>/dev/null
         fi

@@ -4,6 +4,14 @@
 
 # Changelogs
 
+#### V2.0.10 — iOS Flag Emojis & Authentic Apple Styling
+- **FIX (Issue #8 — Flag Emojis Still Stock Android):** Replaced all flag bitmaps inside `NotoColorEmoji.ttf` with genuine Apple iOS flag bitmaps sourced from `AppleColorEmoji.ttf`.
+- **ROOT CAUSE:** The module's previous base font contained Google-designed flag bitmaps (Copyright 2022 Google Inc., Version 2.051). Even though regular emojis were iOS-style, flags always rendered in Android style because Android's Minikin font engine routes all flags to `NotoColorEmojiFlags.ttf` via `und-Zsye`.
+- **OPTICAL SIZING & ALIGNMENT:** All Apple 96×96 emoji assets are uniformly resized to 128×128 (exact 4/3 ratio matching regular Apple emojis like smileys) and placed on the standard 136×128 transparent canvas at horizontal offset (4, 0). Preserves 100% of Apple's original designer proportions, margins, optical baselines, and wave curves without distortion (including square flags like Switzerland 🇨🇭 and Vatican 🇻🇦, and unique shapes like Nepal 🇳🇵).
+- **TERRITORY MAPPINGS:** All 10 uninhabited/outlying territories (UM, CP, EA, DG, AC, TA, HM, SJ, BV, MF) are mapped to their authentic iOS equivalents (UM → US, CP → FR, EA → ES, DG → IO, AC/TA → SH, HM → AU, SJ/BV → NO, MF → FR).
+- **SPECIAL FLAGS:** All 11 special flags (England, Scotland, Wales, Rainbow, Transgender, Pirate, Chequered, Triangular, Crossed, White, Black) perfectly updated. Total 270 flags replaced — 0 Google flags remaining.
+- **CLEANUP:** Removed separate pre-built `NotoColorEmojiFlags.ttf` and dynamic font injection; `customize.sh` mirrors the complete font to all partitions, and `post-fs-data.sh` / `service.sh` lock `/data/fonts/files/` (`chattr +i`) so the `/system/fonts/` overlay always wins.
+
 #### V2.0.7 — OxygenOS/ColorOS Camera Fix (OPPO/OnePlus/Realme)
 - **FIX (Issue #7 — Camera Breaks on OxygenOS/ColorOS):** The module was unconditionally overriding 5 camera sound system properties (`ro.config.camera_sound`, `ro.config.camera_focus_sound`, `ro.config.camera_record_start`, `ro.config.camera_record_stop`, `ro.config.shutter_sound`) via `resetprop` on ALL devices. On OxygenOS/ColorOS, the native camera app (OplusCamera) performs strict validation on these properties and breaks when they contain unexpected values.
 - **NEW (OPPO/OnePlus/Realme Runtime Detection):** Added OEM detection logic to `service.sh` and `boot-completed.sh` (matching the existing detection in `customize.sh`). Detects via `ro.oplus.image.my_manifest`, `ro.product.manufacturer` (oppo/oplus), and `ro.product.brand` (oneplus/realme).
