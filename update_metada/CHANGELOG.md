@@ -4,6 +4,12 @@
 
 # Changelogs
 
+#### V2.0.11 — Restored Default Yellow Skin Tones & Unicode Variation Sequences (UVS Format 14)
+- **FIX (Issue #10 — Missing Yellow Skin Tone on Gboard):** Fixed hand emojis (🖐️, ✌️, ☝️, ✍️) and person emojis (🕴️, 👯‍♂️, 👯‍♀️) displaying only 5 light-to-dark skin tones in Gboard's popup with the default yellow option missing, causing them to lock onto light skin tone.
+- **ROOT CAUSE (Minikin `Paint.hasGlyph` Validation):** Android's text shaping and font engine (Minikin) validates whether an emoji supports emoji presentation (`U+FE0F`) via `FontFamily::hasGlyph(codepoint, 0xFE0F)`. Minikin strictly queries the font's OpenType `cmap` **Format 14 (Unicode Variation Sequences - UVS)** subtable. Because the previous font lacked Format 14 cmap and `uniFE0F` mapping, Minikin returned `false` for `hasGlyph` on base emojis with `FE0F`. Consequently, Gboard assumed the font could not render the neutral yellow base emoji, hid the yellow option from the variant popup tray, and defaulted to Fitzpatrick 1-2 (Light Skin).
+- **OPENTYPE FORMAT 14 CMAP INJECTION:** Embedded a fully compliant OpenType `cmap` Format 14 subtable (`platformID=0, platEncID=5`) mapping all 356 Unicode emoji variation sequence bases for `0xFE0F` to Default UVS.
+- **VARIATION SELECTOR GLYPHS & GSUB LIGATURES:** Added `uniFE0F` and `uniFE0E` zero-width glyphs to `glyphOrder` and `hmtx`, mapped them in Format 12 cmap (`platformID=0, platEncID=4` and `platformID=3, platEncID=10`), and added 356 base + `uniFE0F` and 592 ZWJ + `uniFE0F` ligatures to `GSUB` lookup 0. Now `hasGlyph` returns `true` for all emojis, fully restoring the neutral yellow option in Gboard.
+
 #### V2.0.10 — iOS Flag Emojis & Authentic Apple Styling
 - **FIX (Issue #8 — Flag Emojis Still Stock Android):** Replaced all flag bitmaps inside `NotoColorEmoji.ttf` with genuine Apple iOS flag bitmaps sourced from `AppleColorEmoji.ttf`.
 - **ROOT CAUSE:** The module's previous base font contained Google-designed flag bitmaps (Copyright 2022 Google Inc., Version 2.051). Even though regular emojis were iOS-style, flags always rendered in Android style because Android's Minikin font engine routes all flags to `NotoColorEmojiFlags.ttf` via `und-Zsye`.
