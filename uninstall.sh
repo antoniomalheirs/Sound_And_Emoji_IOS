@@ -37,5 +37,8 @@ for userpath in /data/data /data/user/*; do
 done
 
 # ─── Clean up module caches and restore font permissions ─────────────
+# Remove the immutable lock on /data/fonts/files/ so the system can
+# re-download fonts normally after the module is removed.
+chattr -i /data/fonts/files 2>/dev/null
 chmod 771 /data/fonts 2>/dev/null
 rm -rf /data/fonts 2>/dev/null

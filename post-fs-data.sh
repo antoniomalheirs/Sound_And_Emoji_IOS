@@ -9,8 +9,14 @@ MODDIR="${0%/*}"
 
 # ─── Clean OTA/Mainline downloaded font updates ───────────────────────
 # Remove downloaded Google font updates so the system falls back to module fonts
-rm -rf /data/fonts/files/* 2>/dev/null
-rm -rf /data/system/font_config.xml 2>/dev/null
+# Then LOCK the directory to prevent GMS from re-downloading stock emoji fonts
+# (including NotoColorEmojiFlags.ttf which causes flag emojis to revert to stock)
+if [ -d /data/fonts/files ]; then
+  chattr -i /data/fonts/files 2>/dev/null
+  rm -rf /data/fonts/files/* 2>/dev/null
+  chattr +i /data/fonts/files 2>/dev/null
+fi
+rm -f /data/system/font_config.xml 2>/dev/null
 
 # ─── Clean GMS font caches ───────────────────────────────────────────
 for gms_dir in /data/data/com.google.android.gms/files/fonts /data/user/*/com.google.android.gms/files/fonts; do

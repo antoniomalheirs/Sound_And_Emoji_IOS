@@ -95,10 +95,15 @@ detect_audio_base
 GMS_FONT_PROVIDER="com.google.android.gms/com.google.android.gms.fonts.provider.FontsProvider"
 GMS_FONT_UPDATER="com.google.android.gms/com.google.android.gms.fonts.update.UpdateSchedulerService"
 
-# ─── Clean Dynamic System Font Caches (Safe Mode - No chmod 000) ─────
-log "INFO: Cleaning dynamic system font caches..."
-rm -rf /data/fonts/files/* 2>/dev/null
-rm -rf /data/system/font_config.xml 2>/dev/null
+# ─── Clean Dynamic System Font Caches & Lock Against Re-downloads ─────
+log "INFO: Cleaning and locking dynamic system font caches..."
+if [ -d /data/fonts/files ]; then
+  chattr -i /data/fonts/files 2>/dev/null
+  rm -rf /data/fonts/files/* 2>/dev/null
+  chattr +i /data/fonts/files 2>/dev/null
+  log "INFO: /data/fonts/files/ cleaned and locked (chattr +i)"
+fi
+rm -f /data/system/font_config.xml 2>/dev/null
 if [ -d /data/fonts ]; then
   chmod 771 /data/fonts 2>/dev/null
   chown system:system /data/fonts 2>/dev/null
@@ -479,16 +484,18 @@ start_emoji_watcher() {
         done
       done
 
-      # ── 2. Clean system dynamic font updates (GMS re-downloads) ──
-      # If /data/fonts/files/ has any content, GMS or Mainline re-downloaded
-      # stock emoji fonts — wipe them so the system falls back to our overlay.
+      # ── 2. Clean & lock system dynamic font updates (GMS re-downloads) ──
+      # Lock /data/fonts/files/ with chattr +i so GMS cannot re-download
+      # stock emoji fonts (especially NotoColorEmojiFlags.ttf for flags).
       if [ -d "/data/fonts/files" ]; then
+        chattr -i /data/fonts/files 2>/dev/null
         local dyn_count=$(ls -1A /data/fonts/files/ 2>/dev/null | wc -l)
         if [ "$dyn_count" -gt 0 ]; then
           log "WATCHER: Dynamic font updates detected ($dyn_count files). Cleaning..."
           rm -rf /data/fonts/files/* 2>/dev/null
           rm -f /data/system/font_config.xml 2>/dev/null
         fi
+        chattr +i /data/fonts/files 2>/dev/null
       fi
 
       # ── 3. Clean GMS font caches (Google Play Services emoji re-fetch) ──
@@ -502,7 +509,20 @@ start_emoji_watcher() {
         fi
       done
 
-      # ── 4. Re-apply global emoji replacement for all apps ──
+      # ── 4. Clean APEX font caches (Android 14+ Mainline font delivery) ──
+      for apex_font_dir in \
+        /data/misc/apexdata/com.android.i18n \
+        /data/misc/apexdata/com.google.android.tts; do
+        if [ -d "$apex_font_dir" ]; then
+          local apex_count=$(find "$apex_font_dir" -iname "*emoji*" 2>/dev/null | wc -l)
+          if [ "$apex_count" -gt 0 ]; then
+            find "$apex_font_dir" -iname "*emoji*" -delete 2>/dev/null
+            log "WATCHER: Cleaned $apex_count APEX emoji font(s) from $apex_font_dir"
+          fi
+        fi
+      done
+
+      # ── 5. Re-apply global emoji replacement for all apps ──
       # Scan for emoji fonts that apps may have re-downloaded since boot.
       local g_replaced=0
       EMOJI_FONTS_W=$(find /data/data /data/user/* -iname "*emoji*.ttf" 2>/dev/null \

@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.5-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.6-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -529,7 +529,12 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.5
+### Latest: v2.0.6
+
+- **Flag Emoji Fix (Issue #8):** Locked `/data/fonts/files/` with `chattr +i` to prevent Google Play Services from re-downloading stock `NotoColorEmojiFlags.ttf`. Flag emojis now persist as iOS style across reboots.
+- **APEX Font Cache Cleaning:** Watcher daemon now also cleans Android 14+ Mainline font caches that can override system emoji fonts.
+
+### Previous: v2.0.5
 
 - **Touch Sound Preference Preserved (Issue #9):** Removed forced `sound_effects_enabled=1` and `dtmf_tone=1` from `service.sh` and `boot-completed.sh`. The module no longer overrides user settings on reboot.
 - **Emoji Persistence (Issue #8):** Extended the background Emoji Watcher Daemon in `service.sh` to monitor and clean `/data/fonts/files/`, wipe Google Play Services font caches, and continuously re-apply iOS emojis across apps without CPU overhead.

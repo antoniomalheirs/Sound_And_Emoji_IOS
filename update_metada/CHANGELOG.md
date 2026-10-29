@@ -4,6 +4,12 @@
 
 # Changelogs
 
+#### V2.0.6 — Definitive Flag Emoji Fix & Font Download Lockdown
+- **FIX (Issue #8 — Flag Emojis Still Stock):** Flag emojis (🇧🇷🇺🇸🇫🇷 etc.) were still rendering as stock Android because Google Play Services' `UpdateSchedulerService` re-downloaded `NotoColorEmojiFlags.ttf` to `/data/fonts/files/`, which takes priority over the module's overlay in `/system/fonts/`. The V2.0.5 watcher cleaned these files every 3 minutes, but GMS re-downloaded them in seconds — flags stayed stock between cleanings.
+- **NEW (Immutable Font Directory Lock):** After cleaning `/data/fonts/files/`, the module now locks the directory with `chattr +i` (immutable attribute). The directory still exists (FontManagerService doesn't crash), but nothing can be created inside it — GMS physically cannot re-download stock emoji fonts. Applied in three stages: `post-fs-data.sh` (pre-boot), `service.sh` (boot), and the watcher daemon (ongoing verification).
+- **NEW (APEX Font Cache Cleaning):** The watcher daemon now also monitors and cleans APEX font caches (`/data/misc/apexdata/com.android.i18n/` and `/data/misc/apexdata/com.google.android.tts/`) where Android 14+ Mainline modules can deliver stock emoji fonts.
+- **NEW (Clean Uninstall):** `uninstall.sh` now removes the immutable lock from `/data/fonts/files/` so the system can resume normal font downloads after the module is removed.
+
 #### V2.0.5 — Emoji Persistence & Touch Sound Preference Fix
 - **FIX (Issue #9 — Touch Sound Reactivates on Reboot):** Removed forced `sound_effects_enabled=1` and `dtmf_tone=1` from `service.sh` and `boot-completed.sh`. The module was overriding the user's preference on every reboot, re-enabling touch sounds even when the user had manually disabled them. The module now only defines **which** sounds to use (lock, unlock, keypress paths) without forcing **whether** sounds are enabled — the user's Settings preference is fully respected.
 - **FIX (Issue #8 — Emojis Break After a While):** Expanded the Emoji Watcher Daemon in `service.sh` with three new monitoring blocks that run every 3 minutes alongside the existing Meta/Facebook font watcher:
