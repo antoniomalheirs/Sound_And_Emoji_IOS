@@ -60,11 +60,15 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 | :--- | :--- |
 | 🔊 **Complete iOS Sound Set** | 43 audio files covering UI, ringtones, notifications, alarms, camera, NFC, charging, and more |
 | 😀 **iOS Emoji Replacement** | System-wide emoji override with latest iOS emoji font (~30MB high-res) |
+| 🚩 **Authentic Apple Flags** | 270 genuine iOS flag bitmaps replacing stock Google flags (territories, regional & special flags) |
+| 🎨 **UVS Format 14 CMAP** | Native OpenType Format 14 (371 UVS records) restoring default yellow skin tones and missing BMP emojis |
 | 🔤 **SF Pro Display Font** | 16 font weights (Regular to Ultralight, with Italic variants) |
 | 🏭 **OEM Detection** | Auto-detects Samsung, Xiaomi, LG, HTC, OnePlus, Huawei emoji fonts |
+| 📷 **OxygenOS / ColorOS Guard** | Dynamic OEM detection skipping camera resetprop on OPPO/OnePlus/Realme to avoid crashes |
 | 📱 **Dual-Path Installation** | Installs to both `/system/product/` and `/system/media/` for max ROM compatibility |
 | 🔒 **SELinux Compliant** | Full `u:object_r:system_file:s0` context enforcement + custom SEPolicy rules |
 | 🔄 **Anti-Revert System** | Blocks Google Play Services from re-downloading stock emoji fonts |
+| 🧹 **Zero-Config Gboard Setup** | Automatic storage data wipe (`pm clear`) during installation — no manual cache clearing needed |
 | 📘 **Meta App Fix** | Replaces Facebook, Instagram, and Messenger emoji with iOS versions |
 | 🪵 **Built-in Logging** | Detailed `service.log` for debugging |
 | ♻️ **OverlayFS Support** | Integrated support for `magisk_overlayfs` module |
@@ -153,8 +157,14 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 
 | Font | Size | Purpose |
 | :--- | :--- | :--- |
-| `NotoColorEmoji.ttf` | ~30 MB | System-wide emoji replacement (AOSP/Pixel) |
+| `NotoColorEmoji.ttf` | ~33 MB | System-wide emoji replacement (AOSP/Pixel) with authentic Apple flags & full UVS skin tones |
 | `FacebookEmoji.ttf` | ~30 MB | Meta apps emoji replacement (FB, IG, Messenger) |
+
+> [!NOTE]
+> **Advanced OpenType & Apple Styling Highlights:**
+> - **Authentic iOS Flags:** All 270 flag emojis (including country flags, 10 outlying territories, and 11 special flags) use genuine Apple bitmaps centered at optical coordinates `(4, 0)` with zero Google assets remaining.
+> - **OpenType CMAP Format 14 (UVS):** Features 371 default Unicode Variation Sequence records for `0xFE0F`, fully conforming to Android Minikin's `Paint.hasGlyph()` validation. Restores the default neutral yellow skin tone in Gboard's variant popup across all single and multi-person emojis.
+> - **BMP Emoji Restorations:** Complete character mapping for Basic Multilingual Plane emojis (❤️ `U+2764`, ☠️ `U+2620`, ⁉️ `U+2049`) guaranteeing visibility in both keyboard layouts and search.
 
 ### 🔤 SF Pro Display (16 font weights)
 
@@ -290,7 +300,7 @@ The installation script adapts to the device environment:
 - **Metamodule Check (KSU):** Warns if `meta-overlayfs` or similar is not installed
 - **API-Based Path Selection:** Uses `/system/product/` for Android 12+ or mirrors to `/system/media/` for Android 11
 - **OEM Emoji Detection:** Scans `/system/fonts/` for manufacturer-specific emoji fonts and creates replacements only for fonts that actually exist
-- **Gboard Cache Cleanup:** Removes cached emoji data so Gboard picks up the new font
+- **Gboard Full Storage Data Wipe:** Executes `pm clear com.google.android.inputmethod.latin` across all user profiles exclusively during installation, purging `bundled_emoji_provider.db` so all emoji colors, flags, and menus render fresh out-of-the-box without manual user intervention
 - **OverlayFS Integration:** Detects and supports `magisk_overlayfs` for restricted partitions
 - **SELinux Enforcement:** Applies `u:object_r:system_file:s0` context to all installed files
 
@@ -317,16 +327,18 @@ Runs AFTER OverlayFS/MagicMount has mounted module files.
 The main runtime script. Waits for `sys.boot_completed=1` before executing.
 
 - **resetprop:** Force-sets 25+ `ro.config.*` sound properties that Android 14+ may overwrite during boot
+- **OxygenOS / ColorOS Camera Protection:** Dynamically checks OEM properties (`ro.oplus.image.my_manifest`, `ro.product.manufacturer`, `ro.product.brand`) to skip camera sound `resetprop` on OPPO, OnePlus, and Realme devices, preventing native camera validation crashes while keeping all iOS UI sounds active
 - **Global emoji replacement:** Scans ALL app directories for emoji font files and replaces them
 - **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chmod 444`
-- **GMS Font Provider disable:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services to prevent stock emoji re-download
+- **GMS Font Provider Deactivation:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services across all user profiles to prevent stock emoji font re-downloads or Google metadata injection
+- **Boot-time Gboard Cache Purge:** Clears Gboard layout, superpacks, and emoji caches during boot so the keyboard re-indexes the system iOS font immediately
 - **Media Scanner (Magisk):** Broadcasts `MEDIA_SCANNER_SCAN_FILE` intents for all audio files so they appear in Android's sound picker
 
 ### `boot-completed.sh` — Post-Boot Hook (KSU/APatch)
 
 KernelSU and APatch support this hook natively. Provides a clean way to re-apply properties after the system is fully booted.
 
-- Re-applies all `ro.config.*` sound properties via `resetprop`
+- Re-applies all `ro.config.*` sound properties via `resetprop` (with OEM camera exclusions for OPPO, OnePlus, and Realme devices)
 - Triggers media scanner for ringtones, notifications, and alarms
 
 ### `sepolicy.rule` — SELinux Policy
@@ -523,13 +535,70 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 </details>
 
+<details>
+<summary><b>Gboard: Missing yellow skin tone or emojis locked to light skin</b></summary>
+
+1. In V2.0.12, the neutral yellow skin tone option has been completely restored via OpenType Format 14 CMAP (UVS).
+2. If your keyboard was previously locked to a skin tone, long-press any hand or person emoji.
+3. Select the first option (the neutral yellow emoji).
+4. Due to Gboard's native *One-Tap Skin Tone Preference* feature, Gboard will immediately apply the yellow color globally across all compatible emojis.
+5. If the menu still shows only 5 colors, re-flash the module or run `pm clear com.google.android.inputmethod.latin` in Termux/root shell.
+
+</details>
+
+<details>
+<summary><b>Gboard: Handshake or multi-person emojis show grey figures</b></summary>
+
+1. Emojis with two people or hands (e.g. handshake 🤝, couples 👯) use Gboard's native 2-step selection matrix.
+2. The grey figures are **visual placeholders** waiting for your selection:
+   - Row 1: Selects the tone for the left figure (right figure is grey/placeholder).
+   - Row 2: Selects the tone for the right figure (left figure is grey/placeholder).
+3. To select the default yellow combination for both, simply tap the dual-yellow emoji in the bottom row.
+
+</details>
+
+<details>
+<summary><b>Camera app crashes on OnePlus, OPPO, or Realme (OxygenOS / ColorOS)</b></summary>
+
+1. This issue has been fully resolved since V2.0.7.
+2. The module automatically identifies OPPO/OnePlus/Realme devices and skips overriding camera properties (`ro.config.camera_*`), preserving full native OplusCamera stability while keeping all iOS UI and system sounds active.
+
+</details>
+
 ---
 
 ## 📝 Changelog
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.6
+### Latest: v2.0.12
+
+- **Definitive Fix for Yellow Skin Tone & Missing Emojis (Issue #8):** Completely restored default yellow skin tone options for all hand emojis (🖐️, ✌️, ☝️, ✍️), person in suit levitating (🕴️), bunny people (👯‍♂️, 👯‍♀️), and restored missing standalone emojis like red heart (❤️), skull and crossbones (☠️), and exclamation question mark (⁉️) in Gboard.
+- **Clean CMAP Format 14 Integration:** Replaced CMAP tables with the official OpenType standard layout: Table 0 as Format 14 (Unicode Variation Sequences, 371 default UVS records for `0xFE0F`) and Table 1 as Format 12 (`platformID=3, platEncID=10`), fully passing Android Minikin's `Paint.hasGlyph()` validation.
+- **Disable GMS Fonts Provider:** In `service.sh`, permanently disabled `com.google.android.gms.fonts.provider.FontsProvider` and `UpdateSchedulerService` across all users to stop Google Play Services from serving Google's stock emoji metadata to Gboard.
+- **Gboard Complete Storage Data Wipe on Install:** Added complete storage data wipe (`pm clear com.google.android.inputmethod.latin` + full directory purge) in `customize.sh` exclusively during module installation, ensuring Gboard builds a clean index with all colors and emojis out-of-the-box.
+- **Automatic Gboard Cache Flush on Boot:** Added automatic clearing of Gboard layout, superpacks, and emoji caches during boot in `service.sh`.
+
+### Previous: v2.0.11
+
+- **Restored Default Yellow Skin Tones & Unicode Variation Sequences (UVS Format 14):** Fixed hand emojis and person emojis displaying only 5 light-to-dark skin tones in Gboard's popup with the default yellow option missing.
+- **Root Cause & Minikin Validation:** Identified that Android Minikin queries OpenType `cmap` Format 14 (UVS) for `0xFE0F`. When missing, Minikin returns `false` for `hasGlyph`, causing Gboard to assume the font cannot render the yellow base emoji and hiding it from the variant popup.
+- **OpenType Format 14 CMAP Injection:** Embedded an OpenType `cmap` Format 14 subtable (`platformID=0, platEncID=5`) mapping all Unicode emoji variation sequence bases for `0xFE0F`.
+
+### Previous: v2.0.10
+
+- **iOS Flag Emojis & Authentic Apple Styling (Issue #8):** Replaced all flag bitmaps inside `NotoColorEmoji.ttf` with genuine Apple iOS flag bitmaps sourced from `AppleColorEmoji.ttf`.
+- **Optical Sizing & Alignment:** All Apple 96×96 emoji assets uniformly resized to 128×128 (exact 4/3 ratio matching regular Apple emojis) and placed on the standard 136×128 transparent canvas at horizontal offset (4, 0). Preserves 100% of Apple's original proportions, margins, baselines, and wave curves without distortion.
+- **Territory Mappings & Special Flags:** All 10 outlying territories (UM, CP, EA, DG, AC, TA, HM, SJ, BV, MF) mapped to authentic iOS equivalents. All 11 special flags (England, Scotland, Wales, Rainbow, Transgender, Pirate, Chequered, Triangular, Crossed, White, Black) updated — 270 total flags replaced (0 Google flags remaining).
+- **Cleanup:** Removed separate pre-built `NotoColorEmojiFlags.ttf`; `customize.sh` mirrors the complete font to all partitions, and `post-fs-data.sh` / `service.sh` lock `/data/fonts/files/` (`chattr +i`).
+
+### Previous: v2.0.7
+
+- **OxygenOS / ColorOS Camera Fix (Issue #7):** Native camera app (OplusCamera) broke when `resetprop` overrode camera sound properties on OPPO/OnePlus/Realme.
+- **Runtime OEM Detection:** Added detection logic via `ro.oplus.image.my_manifest`, `ro.product.manufacturer` (oppo/oplus), and `ro.product.brand` (oneplus/realme).
+- **Conditional Camera Property Override:** Camera sound `resetprop` calls are now skipped on OPPO/OnePlus/Realme devices, keeping native camera stability while all other iOS sounds work normally.
+
+### Previous: v2.0.6
 
 - **Flag Emoji Fix (Issue #8):** Locked `/data/fonts/files/` with `chattr +i` to prevent Google Play Services from re-downloading stock `NotoColorEmojiFlags.ttf`. Flag emojis now persist as iOS style across reboots.
 - **APEX Font Cache Cleaning:** Watcher daemon now also cleans Android 14+ Mainline font caches that can override system emoji fonts.
