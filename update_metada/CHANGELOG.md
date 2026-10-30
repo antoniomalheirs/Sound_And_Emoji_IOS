@@ -4,6 +4,12 @@
 
 # Changelogs
 
+#### V2.0.12 — Definitive Fix for Yellow Skin Tone & Missing Emojis (Issue #8)
+- **FIX (Issue #8 — Missing Yellow Hand Emojis & Missing ❤️ ☠️ ⁉️ on Gboard):** Completely restored default yellow skin tone options for all hand emojis (🖐️, ✌️, ☝️, ✍️), person in suit levitating (🕴️), bunny people (👯‍♂️, 👯‍♀️), and restored missing standalone emojis like red heart (❤️), skull and crossbones (☠️), and exclamation question mark (⁉️) in Gboard.
+- **CLEAN CMAP FORMAT 14 INTEGRATION:** Replaced CMAP tables with the official OpenType standard dual-table layout: Table 0 as Format 14 (Unicode Variation Sequences, 371 default UVS records for `0xFE0F`) and Table 1 as Format 12 (`platformID=3, platEncID=10`). Removed artificial `FE0F`/`FE0E` character mappings and artificial GSUB ligatures that interfered with Android Minikin's native shaper.
+- **DISABLE GMS FONTS PROVIDER:** In `service.sh`, disabled `com.google.android.gms.fonts.provider.FontsProvider` across all users. This prevents Google Play Services from serving Google's stock emoji metadata to Gboard, forcing Gboard to strictly use the system's iOS emoji font.
+- **AUTOMATIC GBOARD CACHE FLUSH ON BOOT:** Added automatic clearing of Gboard's layout, superpacks, and emoji caches during boot in `service.sh`. Gboard now re-indexes the font immediately after the system boots.
+
 #### V2.0.11 — Restored Default Yellow Skin Tones & Unicode Variation Sequences (UVS Format 14)
 - **FIX (Issue #10 — Missing Yellow Skin Tone on Gboard):** Fixed hand emojis (🖐️, ✌️, ☝️, ✍️) and person emojis (🕴️, 👯‍♂️, 👯‍♀️) displaying only 5 light-to-dark skin tones in Gboard's popup with the default yellow option missing, causing them to lock onto light skin tone.
 - **ROOT CAUSE (Minikin `Paint.hasGlyph` Validation):** Android's text shaping and font engine (Minikin) validates whether an emoji supports emoji presentation (`U+FE0F`) via `FontFamily::hasGlyph(codepoint, 0xFE0F)`. Minikin strictly queries the font's OpenType `cmap` **Format 14 (Unicode Variation Sequences - UVS)** subtable. Because the previous font lacked Format 14 cmap and `uniFE0F` mapping, Minikin returned `false` for `hasGlyph` on base emojis with `FE0F`. Consequently, Gboard assumed the font could not render the neutral yellow base emoji, hid the yellow option from the variant popup tray, and defaulted to Fitzpatrick 1-2 (Light Skin).

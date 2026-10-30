@@ -385,21 +385,44 @@ done
 sleep 2
 
 # ─── Configure GMS Font Services ──────────────────────────────────
-# Enable FontsProvider so apps can resolve system fonts without crashes.
-# Permanently DISABLE UpdateSchedulerService so Google does NOT redownload stock emojis.
+# Disable FontsProvider and UpdateSchedulerService so Google Play Services
+# does NOT override system emoji fonts or serve stock Android fonts/metadata to Gboard.
 configure_gms_fonts() {
-  log "INFO: Configuring GMS font services (disabling font updater)..."
-  pm enable "$GMS_FONT_PROVIDER" >/dev/null 2>&1
+  log "INFO: Disabling GMS font services (FontsProvider + UpdateSchedulerService)..."
+  pm disable "$GMS_FONT_PROVIDER" >/dev/null 2>&1
   pm disable "$GMS_FONT_UPDATER" >/dev/null 2>&1
   for userpath in /data/user/*; do
     USERID=${userpath##*/}
-    pm enable --user "$USERID" "$GMS_FONT_PROVIDER" >/dev/null 2>&1
+    pm disable --user "$USERID" "$GMS_FONT_PROVIDER" >/dev/null 2>&1
     pm disable --user "$USERID" "$GMS_FONT_UPDATER" >/dev/null 2>&1
   done
-  log "INFO: GMS FontsProvider enabled, UpdateSchedulerService permanently disabled."
+  log "INFO: GMS FontsProvider and UpdateSchedulerService disabled."
 }
 
 configure_gms_fonts
+
+# ─── Clear Gboard Caches on Boot ────────────────────────────────────
+# Clears Gboard's emoji layout cache, superpacks and expression cache
+# so it re-indexes the freshly mounted iOS emoji font from /system/fonts/.
+clear_gboard_cache() {
+  log "INFO: Cleaning Gboard emoji caches..."
+  for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/*/com.google.android.inputmethod.latin; do
+    if [ -d "$gboard_dir" ]; then
+      rm -rf "$gboard_dir/cache"/* 2>/dev/null
+      rm -rf "$gboard_dir/code_cache"/* 2>/dev/null
+      rm -rf "$gboard_dir/files/GCache"/* 2>/dev/null
+      rm -rf "$gboard_dir/files/emoji"* 2>/dev/null
+      rm -rf "$gboard_dir/files/superpacks"* 2>/dev/null
+      rm -rf "$gboard_dir/app_textures"* 2>/dev/null
+      rm -rf "$gboard_dir/files/expression"* 2>/dev/null
+      log "INFO: Cleaned Gboard cache in $gboard_dir"
+    fi
+  done
+  am force-stop com.google.android.inputmethod.latin 2>/dev/null
+  log "INFO: Gboard force-stopped to reload font and emoji layout."
+}
+
+clear_gboard_cache
 
 # ─── Global Emoji Font Replacement (ALL environments) ────────────────
 # Runs on ALL root managers: Magisk, KernelSU, KernelSU Next, and APatch.
