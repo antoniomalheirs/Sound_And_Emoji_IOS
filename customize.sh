@@ -791,8 +791,8 @@ cp -af "$MODPATH/system/fonts/"* "$MODPATH/system/system_ext/fonts/" 2>/dev/null
 ui_print "[✓] Emojis espelhados para /product/fonts e /system_ext/fonts"
 ui_print " "
 
-# ── Clear dynamic font caches & Gboard render cache (ONE TIME, only during installation) ──
-ui_print "[*] Limpando fontes dinâmicas e cache do teclado..."
+# ── Clear dynamic font caches & Gboard storage data (ONE TIME, only during module installation) ──
+ui_print "[*] Limpando fontes dinâmicas..."
 rm -rf /data/fonts/files/* 2>/dev/null
 rm -rf /data/system/font_config.xml 2>/dev/null
 if [ -d /data/fonts ]; then
@@ -802,20 +802,24 @@ if [ -d /data/fonts ]; then
 fi
 ui_print "[✓] Cache de fontes dinâmicas limpo"
 
-for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/*/com.google.android.inputmethod.latin; do
+# ── Limpeza Completa dos Dados de Armazenamento do Gboard na Instalação do Módulo ──
+ui_print "[*] Limpando todos os dados de armazenamento do Gboard..."
+pm clear com.google.android.inputmethod.latin >/dev/null 2>&1
+for userpath in /data/user/*; do
+  USERID=${userpath##*/}
+  pm clear --user "$USERID" com.google.android.inputmethod.latin >/dev/null 2>&1
+done
+
+for gboard_dir in /data/data/com.google.android.inputmethod.latin \
+                  /data/user/*/com.google.android.inputmethod.latin \
+                  /data/user_de/*/com.google.android.inputmethod.latin; do
   if [ -d "$gboard_dir" ]; then
-    rm -rf "$gboard_dir/cache"/* 2>/dev/null
-    rm -rf "$gboard_dir/code_cache"/* 2>/dev/null
-    rm -rf "$gboard_dir/files/GCache"/* 2>/dev/null
-    rm -rf "$gboard_dir/files/emoji"* 2>/dev/null
-    rm -rf "$gboard_dir/files/superpacks"* 2>/dev/null
-    rm -rf "$gboard_dir/app_textures"* 2>/dev/null
-    rm -rf "$gboard_dir/files/expression"* 2>/dev/null
-    rm -rf "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null
+    rm -rf "$gboard_dir"/* 2>/dev/null
   fi
 done
 am force-stop com.google.android.inputmethod.latin 2>/dev/null
-ui_print "[✓] Cache do teclado limpo com sucesso"
+killall com.google.android.inputmethod.latin 2>/dev/null
+ui_print "[✓] Dados de armazenamento do Gboard limpos com sucesso"
 ui_print " "
 
 
