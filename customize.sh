@@ -811,6 +811,7 @@ for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/*/c
     rm -rf "$gboard_dir/files/superpacks"* 2>/dev/null
     rm -rf "$gboard_dir/app_textures"* 2>/dev/null
     rm -rf "$gboard_dir/files/expression"* 2>/dev/null
+    rm -rf "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null
   fi
 done
 am force-stop com.google.android.inputmethod.latin 2>/dev/null
