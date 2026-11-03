@@ -4,6 +4,13 @@
 
 # Changelogs
 
+#### V2.0.13 — Fix for Gboard Faster Voice Typing & Non-Destructive Emoji Cache Cleanup
+- **FIX (Faster Voice Typing / Digitação por Voz do Gboard):** Fixed critical issue where on-device Faster Voice Typing disappeared or stopped functioning in Gboard after module installation and across device reboots.
+- **ROOT CAUSE (Indiscriminate Superpacks Purge on Boot):** In `service.sh`, `rm -rf "$gboard_dir/files/superpacks"*` ran on every boot. Google Superpacks manages dynamic neural assets for on-device voice recognition (`speech` / `ondevice_recognizer`, ~85MB) in addition to emojis. Deleting the entire directory wiped offline speech models on every reboot, causing Gboard's internal superpacks database to desynchronize and hide the offline voice typing option.
+- **ROOT CAUSE (Destructive `pm clear` on Install):** In `customize.sh`, `pm clear com.google.android.inputmethod.latin` wiped the entire application state, revoking runtime Microphone permissions, clearing Google Phenotype feature rollout flags, and deleting offline voice models.
+- **PRESERVE SPEECH & LANGUAGE MODELS:** In `service.sh`, boot-time cleanup is now strictly restricted to emoji superpacks (`rm -rf "$gboard_dir/files/superpacks/emoji"*`), preserving offline speech recognition models (`speech`), neural swipe models (`delight5`), and superpacks metadata.
+- **SURGICAL EMOJI CACHE WIPE ON INSTALL:** In `customize.sh`, completely removed `pm clear` and full directory purge. Installation now surgically purges only emoji-specific caches (`databases/bundled_emoji_provider*`, `files/emoji*`, `files/superpacks/emoji*`, `app_textures*`, `cache*`), instantly applying iOS emojis and default yellow skin tone without resetting microphone permission, user dictionary, keyboard preferences, or Faster Voice Typing models.
+
 #### V2.0.12 — Definitive Fix for Yellow Skin Tone & Missing Emojis (Issue #8)
 - **FIX (Issue #8 — Missing Yellow Hand Emojis & Missing ❤️ ☠️ ⁉️ on Gboard):** Completely restored default yellow skin tone options for all hand emojis (🖐️, ✌️, ☝️, ✍️), person in suit levitating (🕴️), bunny people (👯‍♂️, 👯‍♀️), and restored missing standalone emojis like red heart (❤️), skull and crossbones (☠️), and exclamation question mark (⁉️) in Gboard.
 - **CLEAN CMAP FORMAT 14 INTEGRATION:** Replaced CMAP tables with the official OpenType standard dual-table layout: Table 0 as Format 14 (Unicode Variation Sequences, 371 default UVS records for `0xFE0F`) and Table 1 as Format 12 (`platformID=3, platEncID=10`). Removed artificial `FE0F`/`FE0E` character mappings and artificial GSUB ligatures that interfered with Android Minikin's native shaper.

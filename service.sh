@@ -402,8 +402,10 @@ configure_gms_fonts() {
 configure_gms_fonts
 
 # ─── Clear Gboard Caches on Boot ────────────────────────────────────
-# Clears Gboard's emoji layout cache, superpacks and expression cache
+# Clears Gboard's emoji layout cache, emoji superpacks and expression cache
 # so it re-indexes the freshly mounted iOS emoji font from /system/fonts/.
+# NOTE: Preserves speech models (superpacks/speech, ondevice_recognizer)
+# and delight5 language models so Faster Voice Typing works continuously.
 clear_gboard_cache() {
   log "INFO: Cleaning Gboard emoji caches..."
   for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/*/com.google.android.inputmethod.latin; do
@@ -412,7 +414,7 @@ clear_gboard_cache() {
       rm -rf "$gboard_dir/code_cache"/* 2>/dev/null
       rm -rf "$gboard_dir/files/GCache"/* 2>/dev/null
       rm -rf "$gboard_dir/files/emoji"* 2>/dev/null
-      rm -rf "$gboard_dir/files/superpacks"* 2>/dev/null
+      rm -rf "$gboard_dir/files/superpacks/emoji"* 2>/dev/null
       rm -rf "$gboard_dir/app_textures"* 2>/dev/null
       rm -rf "$gboard_dir/files/expression"* 2>/dev/null
       log "INFO: Cleaned Gboard cache in $gboard_dir"

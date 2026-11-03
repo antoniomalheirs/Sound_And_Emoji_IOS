@@ -68,7 +68,7 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 | 📱 **Dual-Path Installation** | Installs to both `/system/product/` and `/system/media/` for max ROM compatibility |
 | 🔒 **SELinux Compliant** | Full `u:object_r:system_file:s0` context enforcement + custom SEPolicy rules |
 | 🔄 **Anti-Revert System** | Blocks Google Play Services from re-downloading stock emoji fonts |
-| 🧹 **Zero-Config Gboard Setup** | Automatic storage data wipe (`pm clear`) during installation — no manual cache clearing needed |
+| 🧹 **Zero-Config Gboard Setup** | Non-destructive emoji cache & DB purge (`bundled_emoji_provider.db`) — restores emojis without wiping settings or voice models |
 | 📘 **Meta App Fix** | Replaces Facebook, Instagram, and Messenger emoji with iOS versions |
 | 🪵 **Built-in Logging** | Detailed `service.log` for debugging |
 | ♻️ **OverlayFS Support** | Integrated support for `magisk_overlayfs` module |
@@ -300,7 +300,7 @@ The installation script adapts to the device environment:
 - **Metamodule Check (KSU):** Warns if `meta-overlayfs` or similar is not installed
 - **API-Based Path Selection:** Uses `/system/product/` for Android 12+ or mirrors to `/system/media/` for Android 11
 - **OEM Emoji Detection:** Scans `/system/fonts/` for manufacturer-specific emoji fonts and creates replacements only for fonts that actually exist
-- **Gboard Full Storage Data Wipe:** Executes `pm clear com.google.android.inputmethod.latin` across all user profiles exclusively during installation, purging `bundled_emoji_provider.db` so all emoji colors, flags, and menus render fresh out-of-the-box without manual user intervention
+- **Surgical Gboard Emoji DB Reset:** Purges `bundled_emoji_provider.db`, layout textures, and emoji superpacks across all profiles without `pm clear`, preserving user dictionary, custom layouts, microphone permissions, and offline Faster Voice Typing models
 - **OverlayFS Integration:** Detects and supports `magisk_overlayfs` for restricted partitions
 - **SELinux Enforcement:** Applies `u:object_r:system_file:s0` context to all installed files
 
@@ -331,7 +331,7 @@ The main runtime script. Waits for `sys.boot_completed=1` before executing.
 - **Global emoji replacement:** Scans ALL app directories for emoji font files and replaces them
 - **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chmod 444`
 - **GMS Font Provider Deactivation:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services across all user profiles to prevent stock emoji font re-downloads or Google metadata injection
-- **Boot-time Gboard Cache Purge:** Clears Gboard layout, superpacks, and emoji caches during boot so the keyboard re-indexes the system iOS font immediately
+- **Boot-time Gboard Emoji Cache Purge:** Clears Gboard layout, expression, and emoji superpacks (`files/superpacks/emoji*`) during boot so the keyboard re-indexes the system iOS font while keeping offline voice recognition models intact
 - **Media Scanner (Magisk):** Broadcasts `MEDIA_SCANNER_SCAN_FILE` intents for all audio files so they appear in Android's sound picker
 
 ### `boot-completed.sh` — Post-Boot Hook (KSU/APatch)
@@ -558,6 +558,17 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 </details>
 
 <details>
+<summary><b>Gboard: Faster Voice Typing (Digitação por voz mais rápida) disappeared or not working</b></summary>
+
+1. In V2.0.13, the module's boot cleaner and installer have been completely overhauled to protect on-device speech models (`superpacks/speech` and `ondevice_recognizer`).
+2. If your Gboard had voice typing affected by a previous version, follow these simple steps to re-enable it:
+   - **Microphone Permission:** Go to **Settings → Apps → Gboard → Permissions** and make sure **Microphone** is set to **Allow**.
+   - **Download Offline Speech Model:** Open Gboard → Tap the **Settings (gear)** icon on the keyboard toolbar → **Voice typing** → Toggle on **Faster voice typing** (or **Offline speech recognition**). Ensure you are connected to Wi-Fi so Gboard can download the local speech pack (~85MB).
+   - **Android System Intelligence:** Ensure that the system app **Android System Intelligence** (or *Device Personalization Services*) is enabled and allowed to run in the background.
+
+</details>
+
+<details>
 <summary><b>Camera app crashes on OnePlus, OPPO, or Realme (OxygenOS / ColorOS)</b></summary>
 
 1. This issue has been fully resolved since V2.0.7.
@@ -571,7 +582,13 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.12
+### Latest: v2.0.13
+
+- **Fix for Gboard Faster Voice Typing & Non-Destructive Emoji Cache Cleanup:** Resolved critical regression where offline Faster Voice Typing disappeared or stopped functioning in Gboard.
+- **Root Cause & Superpacks Protection:** In `service.sh`, restricted boot-time cache cleaning to emoji superpacks (`files/superpacks/emoji*`), completely preserving offline neural speech models (`speech` / `ondevice_recognizer`, ~85MB) and neural language typing models (`delight5`).
+- **Surgical Installation Engine:** In `customize.sh`, removed destructive `pm clear com.google.android.inputmethod.latin`. Now purges only emoji database and rendering caches (`bundled_emoji_provider.db`, `files/emoji*`, `files/superpacks/emoji*`), ensuring iOS emojis and neutral skin tones activate instantly without revoking microphone permissions, wiping user dictionary, custom settings, or voice models.
+
+### Previous: v2.0.12
 
 - **Definitive Fix for Yellow Skin Tone & Missing Emojis (Issue #8):** Completely restored default yellow skin tone options for all hand emojis (🖐️, ✌️, ☝️, ✍️), person in suit levitating (🕴️), bunny people (👯‍♂️, 👯‍♀️), and restored missing standalone emojis like red heart (❤️), skull and crossbones (☠️), and exclamation question mark (⁉️) in Gboard.
 - **Clean CMAP Format 14 Integration:** Replaced CMAP tables with the official OpenType standard layout: Table 0 as Format 14 (Unicode Variation Sequences, 371 default UVS records for `0xFE0F`) and Table 1 as Format 12 (`platformID=3, platEncID=10`), fully passing Android Minikin's `Paint.hasGlyph()` validation.
