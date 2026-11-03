@@ -582,7 +582,13 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.13
+### Latest: v2.0.14
+
+- **Fix for KernelSU / APatch / Meta-OverlayFS / Hybrid Mount Collision & Xiaomi HyperOS (Issue #11):** Resolved critical mounting failure where modules failed to mount on modern metamodules like `meta-overlayfs` (OverlayFS MetaModule) and `meta-hybrid_mount` (Hybrid Mount) with error 22 (EINVAL) or path conflict errors.
+- **Intelligent Partition Reconciliation (Anti-Collision):** Eliminates nested mount collisions between `$MODPATH/system/product` and `$MODPATH/product` by dynamically adapting module tree: on KernelSU/APatch, standalone partition trees (`/product`, `/system_ext`, `/system`) are cleanly separated without conflicting nested folders; on Magisk, files are unified under `$MODPATH/system/`.
+- **Xiaomi HyperOS Emoji Guarantee:** Expanded Xiaomi/MIUI/HyperOS detection to verify manufacturer and brand flags (`xiaomi`, `redmi`, `poco`), guaranteeing `MiuiEmoji.ttf` is always mapped in both `/system/fonts` and `/product/fonts`.
+
+### Previous: v2.0.13
 
 - **Fix for Gboard Faster Voice Typing & Non-Destructive Emoji Cache Cleanup:** Resolved critical regression where offline Faster Voice Typing disappeared or stopped functioning in Gboard.
 - **Root Cause & Superpacks Protection:** In `service.sh`, restricted boot-time cache cleaning to emoji superpacks (`files/superpacks/emoji*`), completely preserving offline neural speech models (`speech` / `ondevice_recognizer`, ~85MB) and neural language typing models (`delight5`).

@@ -4,6 +4,15 @@
 
 # Changelogs
 
+#### V2.0.14 — Fix for KernelSU / APatch / Meta-OverlayFS / Hybrid Mount Collision & Xiaomi HyperOS Emojis
+- **FIX (Issue #11 — Emojis Not Showing Systemwide on KernelSU/APatch):** Fixed critical issue where modules failed to mount in `meta-overlayfs` (OverlayFS MetaModule) and `meta-hybrid_mount` (Hybrid Mount) with error 22 (EINVAL) or path conflicts, resulting in emojis only working in Facebook Messenger and stock Android/OEM emojis persisting systemwide.
+- **ROOT CAUSE (Nested Mount Collision):** In `customize.sh`, the installer previously duplicated files into both `$MODPATH/product` (root level) AND `$MODPATH/system/product` (nested), and both `$MODPATH/system_ext` AND `$MODPATH/system/system_ext`. On modern Android with standalone dynamic partitions, mounting both `/system` (containing `/system/product`) and standalone `/product` caused a nested overlay collision, prompting Hybrid Mount (Kasumi) and Meta-OverlayFS to reject and fail the module.
+- **INTELLIGENT PARTITION RECONCILIATION:**
+  - **KernelSU / APatch / MetaModule:** Organizes clean standalone partitions (`$MODPATH/product`, `$MODPATH/system_ext`, `$MODPATH/system`) and surgically deletes conflicting nested directories (`$MODPATH/system/product` and `$MODPATH/system/system_ext`). Eliminates all mount collisions while ensuring all audio and fonts are present on their respective partition layers.
+  - **Magisk:** Unifies all partition payloads strictly under `$MODPATH/system/` (matching Magisk's official systemless partition standard) and removes loose root-level folders.
+- **RELIABLE XIAOMI HYPEROS EMOJI MAPPING:** Expanded Xiaomi/MIUI/HyperOS detection to inspect `ro.product.manufacturer` and `ro.product.brand` (`xiaomi`, `redmi`, `poco`), guaranteeing `MiuiEmoji.ttf` is always linked in both `/system/fonts` and `/product/fonts` even on custom ROMs or UEFI bootloaders like `gbl_root_canoe`.
+- **RELIABLE APATCH & METAMODULE DETECTION:** Added explicit detection flags for `APatch` and `meta-hybrid_mount` during installation.
+
 #### V2.0.13 — Fix for Gboard Faster Voice Typing & Non-Destructive Emoji Cache Cleanup
 - **FIX (Faster Voice Typing / Digitação por Voz do Gboard):** Fixed critical issue where on-device Faster Voice Typing disappeared or stopped functioning in Gboard after module installation and across device reboots.
 - **ROOT CAUSE (Indiscriminate Superpacks Purge on Boot):** In `service.sh`, `rm -rf "$gboard_dir/files/superpacks"*` ran on every boot. Google Superpacks manages dynamic neural assets for on-device voice recognition (`speech` / `ondevice_recognizer`, ~85MB) in addition to emojis. Deleting the entire directory wiped offline speech models on every reboot, causing Gboard's internal superpacks database to desynchronize and hide the offline voice typing option.

@@ -14,7 +14,10 @@ package_installed() {
 
 # Detect the root environment
 detect_environment() {
-  if [ -n "$KSU" ]; then
+  IS_KSU=false
+  IS_APATCH=false
+  IS_MAGISK=false
+  if [ -n "$KSU" ] || [ -d "/data/adb/ksu" ] || [ -f "/data/adb/ksud" ]; then
     if [ -n "$KSU_VER_CODE" ] && [ "$KSU_VER_CODE" -ge 20000 ] 2>/dev/null; then
       ENV_NAME="KernelSU Next"
     else
@@ -23,16 +26,16 @@ detect_environment() {
     ENV_VER="$KSU_VER"
     ENV_VER_CODE="$KSU_VER_CODE"
     IS_KSU=true
-  elif [ -n "$APATCH" ]; then
+  elif [ -n "$APATCH" ] || [ -d "/data/adb/ap" ]; then
     ENV_NAME="APatch"
     ENV_VER="$APATCH_VER"
     ENV_VER_CODE="$APATCH_VER_CODE"
-    IS_KSU=false
+    IS_APATCH=true
   else
     ENV_NAME="Magisk"
     ENV_VER="$MAGISK_VER"
     ENV_VER_CODE="$MAGISK_VER_CODE"
-    IS_KSU=false
+    IS_MAGISK=true
   fi
 }
 
@@ -54,17 +57,22 @@ ui_print "[✓] Versão: $ENV_VER (code: $ENV_VER_CODE)"
 ui_print " "
 sleep 1
 
-# ── KernelSU metamodule check ──
-if [ "$IS_KSU" = true ]; then
-  METAMODULE_FOUND=false
-
+# ── KernelSU / APatch metamodule check ──
+METAMODULE_FOUND=false
+if [ "$IS_KSU" = true ] || [ "$IS_APATCH" = true ]; then
   # Check for meta-overlayfs
   if [ -d "/data/adb/modules/meta-overlayfs" ] && [ ! -f "/data/adb/modules/meta-overlayfs/disable" ]; then
     METAMODULE_FOUND=true
     ui_print "[✓] Metamodule detectado: meta-overlayfs"
   fi
 
-  # Check for hybrid mount or other known metamodules
+  # Check for hybrid mount (meta-hybrid_mount)
+  if [ -d "/data/adb/modules/meta-hybrid_mount" ] && [ ! -f "/data/adb/modules/meta-hybrid_mount/disable" ]; then
+    METAMODULE_FOUND=true
+    ui_print "[✓] Metamodule detectado: meta-hybrid_mount (Hybrid Mount)"
+  fi
+
+  # Check for other known metamodules (metamodule=1 in module.prop)
   for meta_dir in /data/adb/modules/*/; do
     if [ -f "${meta_dir}module.prop" ]; then
       if grep -q "metamodule=1" "${meta_dir}module.prop" 2>/dev/null; then
@@ -706,19 +714,19 @@ if [ "$IS_MODULE_UPDATE" = true ]; then
   ui_print "[*] Atualização detectada — detecção baseada em propriedades da ROM"
 
   # Samsung — use robust detection (handles custom ROMs like LemonUI)
-  if [ "$IS_SAMSUNG" = true ]; then
+  if [ "$IS_SAMSUNG" = true ] || [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
     ui_print "[*] ROM detectada: Samsung/OneUI (ou baseada)"
     link_emoji "SamsungColorEmoji.ttf"
   fi
 
   # Xiaomi / MIUI / HyperOS
-  if [ "$IS_XIAOMI" = true ]; then
+  if [ "$IS_XIAOMI" = true ] || [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "redmi" ] || [ "$BRAND" = "poco" ]; then
     ui_print "[*] ROM detectada: Xiaomi/MIUI/HyperOS"
     link_emoji "MiuiEmoji.ttf"
   fi
 
   # OPPO/OnePlus/Realme
-  if [ "$IS_OPPO" = true ]; then
+  if [ "$IS_OPPO" = true ] || [ "$MANUFACTURER" = "oppo" ] || [ "$MANUFACTURER" = "oneplus" ] || [ "$MANUFACTURER" = "realme" ] || [ "$BRAND" = "oppo" ] || [ "$BRAND" = "oneplus" ] || [ "$BRAND" = "realme" ]; then
     ui_print "[*] ROM detectada: OPPO/OnePlus/Realme"
     link_emoji "OPFontEmoji.ttf"
     link_emoji "OnePlusColorEmoji.ttf"
@@ -790,6 +798,56 @@ cp -af "$MODPATH/system/fonts/"* "$MODPATH/system/system_ext/fonts/" 2>/dev/null
 
 ui_print "[✓] Emojis espelhados para /product/fonts e /system_ext/fonts"
 ui_print " "
+
+# ─── Organização Inteligente de Partições (Anti-Colisão OverlayFS / Hybrid Mount) ───
+# No KernelSU / APatch / Meta-OverlayFS / Hybrid Mount (Kasumi):
+# As partições /system, /product e /system_ext são montadas de forma independente na raiz.
+# Não podemos manter diretórios aninhados $MODPATH/system/product ou $MODPATH/system/system_ext,
+# pois causam erro de colisão de camadas (EINVAL / os error 22 / path conflict no Hybrid Mount).
+if [ "$IS_KSU" = true ] || [ "$IS_APATCH" = true ] || [ "$METAMODULE_FOUND" = true ]; then
+  ui_print "[*] KernelSU/APatch: organizando partições independentes (OverlayFS)..."
+  # Garantir payload completo em /product
+  mkdir -p "$MODPATH/product/media" "$MODPATH/product/fonts" 2>/dev/null
+  cp -af "$MODPATH/system/fonts/"* "$MODPATH/product/fonts/" 2>/dev/null
+  if [ -d "$SOUND_DIR_PROD" ]; then
+    cp -af "$SOUND_DIR_PROD" "$MODPATH/product/media/" 2>/dev/null
+  fi
+
+  # Garantir payload completo em /system_ext se aplicável
+  if [ -d "/system_ext" ] || [ -d "$MODPATH/system_ext" ]; then
+    mkdir -p "$MODPATH/system_ext/media" "$MODPATH/system_ext/fonts" 2>/dev/null
+    cp -af "$MODPATH/system/fonts/"* "$MODPATH/system_ext/fonts/" 2>/dev/null
+    if [ -d "$SOUND_DIR_PROD" ]; then
+      cp -af "$SOUND_DIR_PROD" "$MODPATH/system_ext/media/" 2>/dev/null
+    fi
+  fi
+
+  # Eliminar conflitos: remover subpastas aninhadas em system/
+  rm -rf "$MODPATH/system/product" 2>/dev/null
+  rm -rf "$MODPATH/system/system_ext" 2>/dev/null
+  ui_print "[✓] Árvore de partições sem colisão (OverlayFS & Hybrid Mount 100% OK)"
+  ui_print " "
+else
+  # No Magisk tradicional:
+  # O Magisk monta a árvore sob $MODPATH/system e mapeia system/product para /product.
+  # Garantir que system/product e system/system_ext existam e remover pastas soltas na raiz.
+  ui_print "[*] Magisk: unificando partições sob /system..."
+  mkdir -p "$MODPATH/system/product/fonts" 2>/dev/null
+  cp -af "$MODPATH/system/fonts/"* "$MODPATH/system/product/fonts/" 2>/dev/null
+
+  if [ -d "/system_ext" ] || [ -d "$MODPATH/system_ext" ]; then
+    mkdir -p "$MODPATH/system/system_ext/fonts" "$MODPATH/system/system_ext/media" 2>/dev/null
+    cp -af "$MODPATH/system/fonts/"* "$MODPATH/system/system_ext/fonts/" 2>/dev/null
+    if [ -d "$SOUND_DIR_PROD" ]; then
+      cp -af "$SOUND_DIR_PROD" "$MODPATH/system/system_ext/media/" 2>/dev/null
+    fi
+  fi
+
+  rm -rf "$MODPATH/product" 2>/dev/null
+  rm -rf "$MODPATH/system_ext" 2>/dev/null
+  ui_print "[✓] Árvore Magisk unificada sob /system"
+  ui_print " "
+fi
 
 # ── Clear dynamic font caches & Gboard emoji cache (ONE TIME, only during module installation) ──
 ui_print "[*] Limpando fontes dinâmicas..."
