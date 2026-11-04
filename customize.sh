@@ -722,6 +722,7 @@ if [ "$IS_MODULE_UPDATE" = true ]; then
   # Xiaomi / MIUI / HyperOS
   if [ "$IS_XIAOMI" = true ] || [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "redmi" ] || [ "$BRAND" = "poco" ]; then
     ui_print "[*] ROM detectada: Xiaomi/MIUI/HyperOS"
+    link_emoji "MiuiColorEmoji.ttf"
     link_emoji "MiuiEmoji.ttf"
   fi
 
@@ -730,24 +731,31 @@ if [ "$IS_MODULE_UPDATE" = true ]; then
     ui_print "[*] ROM detectada: OPPO/OnePlus/Realme"
     link_emoji "OPFontEmoji.ttf"
     link_emoji "OnePlusColorEmoji.ttf"
+    link_emoji "OnePlusEmoji.ttf"
   fi
 
   # LG
   if [ "$IS_LG" = true ]; then
     ui_print "[*] ROM detectada: LG"
     link_emoji "LGColorEmoji.ttf"
+    link_emoji "LGNotoColorEmoji.ttf"
   fi
+
+  # HTC
+  link_emoji "HTC_ColorEmoji.ttf"
 
   # Huawei
   if [ "$IS_HUAWEI" = true ]; then
     ui_print "[*] ROM detectada: Huawei/EMUI"
     link_emoji "HwColorEmoji.ttf"
+    link_emoji "HuaweiColorEmoji.ttf"
   fi
 
   # Honor (independent — still uses HwColorEmoji.ttf in some builds)
   if [ "$IS_HONOR" = true ]; then
     ui_print "[*] ROM detectada: Honor/MagicOS"
     link_emoji "HwColorEmoji.ttf"
+    link_emoji "HuaweiColorEmoji.ttf"
     link_emoji "HonorColorEmoji.ttf"
   fi
 
@@ -771,6 +779,20 @@ else
       done
     fi
   done
+
+  # Fallback OEM mappings if system scan missed any dynamic files
+  if [ "$IS_XIAOMI" = true ] || [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "redmi" ] || [ "$BRAND" = "poco" ]; then
+    link_emoji "MiuiColorEmoji.ttf"
+    link_emoji "MiuiEmoji.ttf"
+  fi
+  if [ "$IS_SAMSUNG" = true ] || [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
+    link_emoji "SamsungColorEmoji.ttf"
+  fi
+  if [ "$IS_OPPO" = true ] || [ "$MANUFACTURER" = "oppo" ] || [ "$MANUFACTURER" = "oneplus" ] || [ "$MANUFACTURER" = "realme" ]; then
+    link_emoji "OPFontEmoji.ttf"
+    link_emoji "OnePlusColorEmoji.ttf"
+    link_emoji "OnePlusEmoji.ttf"
+  fi
 fi
 
 if [ "$OEM_FOUND" = false ]; then
@@ -860,6 +882,18 @@ if [ -d /data/fonts ]; then
 fi
 ui_print "[✓] Cache de fontes dinâmicas limpo"
 
+# ── Clean Xiaomi HyperOS/MIUI theme font cache if present ──
+ui_print "[*] Verificando caches de temas Xiaomi (se houver)..."
+for theme_font in /data/system/theme/fonts /data/system/theme_magic/fonts; do
+  if [ -d "$theme_font" ]; then
+    rm -rf "$theme_font"/*emoji* 2>/dev/null
+    rm -rf "$theme_font"/NotoColorEmoji* 2>/dev/null
+    rm -rf "$theme_font"/MiuiColorEmoji* 2>/dev/null
+    rm -rf "$theme_font"/MiuiEmoji* 2>/dev/null
+  fi
+done
+ui_print "[✓] Caches de temas verificados"
+
 # ── Limpeza Segura dos Caches e Banco de Emojis do Gboard (ONE TIME, na Instalação) ──
 # Limpa cirurgicamente o banco de dados de emojis (bundled_emoji_provider.db), caches de renderização
 # e superpacks de emoji, PRESERVANDO preferências do usuário, permissões de microfone,
@@ -882,6 +916,17 @@ done
 am force-stop com.google.android.inputmethod.latin 2>/dev/null
 killall com.google.android.inputmethod.latin 2>/dev/null
 ui_print "[✓] Cache de emojis do Gboard limpo com sucesso"
+
+# ── Limpar cache do Google Messages ──
+for msg_dir in /data/data/com.google.android.apps.messaging \
+               /data/user/*/com.google.android.apps.messaging; do
+  if [ -d "$msg_dir" ]; then
+    rm -rf "$msg_dir/cache"/* 2>/dev/null
+    rm -rf "$msg_dir/code_cache"/* 2>/dev/null
+  fi
+done
+am force-stop com.google.android.apps.messaging 2>/dev/null
+ui_print "[✓] Cache do Google Messages limpo"
 ui_print " "
 
 

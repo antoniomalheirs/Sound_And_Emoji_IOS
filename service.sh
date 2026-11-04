@@ -247,8 +247,14 @@ done
 # Check specific files
 for check_file in \
   "/system/fonts/NotoColorEmoji.ttf" \
+  "/system/fonts/MiuiColorEmoji.ttf" \
+  "/system/fonts/MiuiEmoji.ttf" \
   "/system/fonts/SamsungColorEmoji.ttf" \
+  "/product/fonts/NotoColorEmoji.ttf" \
+  "/product/fonts/MiuiColorEmoji.ttf" \
+  "/product/fonts/MiuiEmoji.ttf" \
   "/system/product/media/audio/ui/Lock.ogg" \
+  "/product/media/audio/ui/Lock.ogg" \
   "/system/media/audio/ui/Lock.ogg"; do
   if [ -f "$check_file" ]; then
     log "INFO: File exists: $check_file ($(wc -c < "$check_file" 2>/dev/null | tr -d ' ') bytes)"
@@ -402,8 +408,8 @@ configure_gms_fonts() {
 configure_gms_fonts
 
 # ─── Clear Gboard Caches on Boot ────────────────────────────────────
-# Clears Gboard's emoji layout cache, emoji superpacks and expression cache
-# so it re-indexes the freshly mounted iOS emoji font from /system/fonts/.
+# Clears Gboard's emoji layout cache, emoji superpacks, expression cache, and
+# emoji database so it re-indexes the freshly mounted iOS emoji font from /system/fonts/.
 # NOTE: Preserves speech models (superpacks/speech, ondevice_recognizer)
 # and delight5 language models so Faster Voice Typing works continuously.
 clear_gboard_cache() {
@@ -417,6 +423,7 @@ clear_gboard_cache() {
       rm -rf "$gboard_dir/files/superpacks/emoji"* 2>/dev/null
       rm -rf "$gboard_dir/app_textures"* 2>/dev/null
       rm -rf "$gboard_dir/files/expression"* 2>/dev/null
+      rm -rf "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null
       log "INFO: Cleaned Gboard cache in $gboard_dir"
     fi
   done
@@ -426,6 +433,30 @@ clear_gboard_cache() {
 
 clear_gboard_cache
 
+# ─── Clear Google Messages & Xiaomi Theme Emoji Caches on Boot ────────
+clean_system_emoji_caches() {
+  log "INFO: Cleaning Google Messages caches..."
+  for msg_dir in /data/data/com.google.android.apps.messaging /data/user/*/com.google.android.apps.messaging; do
+    if [ -d "$msg_dir" ]; then
+      rm -rf "$msg_dir/cache"/* 2>/dev/null
+      rm -rf "$msg_dir/code_cache"/* 2>/dev/null
+    fi
+  done
+  am force-stop com.google.android.apps.messaging 2>/dev/null
+
+  log "INFO: Checking Xiaomi Theme font cache..."
+  for theme_font in /data/system/theme/fonts /data/system/theme_magic/fonts; do
+    if [ -d "$theme_font" ]; then
+      rm -rf "$theme_font"/*emoji* 2>/dev/null
+      rm -rf "$theme_font"/NotoColorEmoji* 2>/dev/null
+      rm -rf "$theme_font"/MiuiColorEmoji* 2>/dev/null
+      rm -rf "$theme_font"/MiuiEmoji* 2>/dev/null
+    fi
+  done
+}
+
+clean_system_emoji_caches
+
 # ─── Global Emoji Font Replacement (ALL environments) ────────────────
 # Runs on ALL root managers: Magisk, KernelSU, KernelSU Next, and APatch.
 # Excludes: Meta apps (handled above),
@@ -433,11 +464,14 @@ clear_gboard_cache
 replace_global_emoji() {
   log "INFO: Starting global emoji font replacement in /data/data..."
   local emoji_source="/system/fonts/NotoColorEmoji.ttf"
+  local emoji_source_prod="/product/fonts/NotoColorEmoji.ttf"
   local emoji_source_mod="$MODDIR/system/fonts/NotoColorEmoji.ttf"
   local source=""
 
   if [ -f "$emoji_source" ]; then
     source="$emoji_source"
+  elif [ -f "$emoji_source_prod" ]; then
+    source="$emoji_source_prod"
   elif [ -f "$emoji_source_mod" ]; then
     source="$emoji_source_mod"
   fi
@@ -457,6 +491,18 @@ replace_global_emoji() {
     chmod 644 "$font" 2>/dev/null
     replaced=$((replaced + 1))
   done
+
+  # Also scan and replace any emoji fonts in /data/system/theme/
+  for theme_dir in /data/system/theme /data/system/theme_magic; do
+    if [ -d "$theme_dir" ]; then
+      for tfont in $(find "$theme_dir" -iname "*emoji*.ttf" 2>/dev/null); do
+        cp -f "$source" "$tfont" 2>/dev/null
+        chmod 644 "$tfont" 2>/dev/null
+        replaced=$((replaced + 1))
+      done
+    fi
+  done
+
   log "INFO: Global emoji replacement complete. Replaced $replaced font(s)."
 }
 
@@ -489,6 +535,8 @@ start_emoji_watcher() {
     IOS_EMOJI_PATH=""
     if [ -f "/system/fonts/NotoColorEmoji.ttf" ]; then
       IOS_EMOJI_PATH="/system/fonts/NotoColorEmoji.ttf"
+    elif [ -f "/product/fonts/NotoColorEmoji.ttf" ]; then
+      IOS_EMOJI_PATH="/product/fonts/NotoColorEmoji.ttf"
     elif [ -f "$MODDIR/system/fonts/NotoColorEmoji.ttf" ]; then
       IOS_EMOJI_PATH="$MODDIR/system/fonts/NotoColorEmoji.ttf"
     fi

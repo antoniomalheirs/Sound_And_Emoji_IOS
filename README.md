@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.12-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.15-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -582,7 +582,16 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.14
+### Latest: v2.0.15
+
+- **Fix for Xiaomi HyperOS Primary Emoji Font (`MiuiColorEmoji.ttf`) & Gboard Database Re-indexing (Issue #11):** Resolved issue where Xiaomi HyperOS devices continued displaying stock Android emojis across Gboard, Google Messages, Google Voice, and system UI while emojis only worked in Facebook Messenger.
+- **Root Cause (HyperOS `fonts.xml` Priority):** In Xiaomi HyperOS, the system font configuration (`/system/etc/fonts.xml`) defines `MiuiColorEmoji.ttf` as the primary font in the `<family lang="und-Zsye">` fallback chain before `NotoColorEmoji.ttf`. Previous module builds only linked `MiuiEmoji.ttf`, leaving `MiuiColorEmoji.ttf` stock and unreplaced.
+- **Complete OEM Emoji Mapping:** Explicitly mapped both `MiuiColorEmoji.ttf` and `MiuiEmoji.ttf` in `customize.sh` and mirrored across all partition layers (`/system/fonts`, `/product/fonts`, `/system_ext/fonts`). Added complete fallback mappings for LG, OnePlus, Huawei, and HTC.
+- **Gboard Database Re-indexing:** In `post-fs-data.sh` and `service.sh`, added boot-time cleanup of Gboard's SQLite emoji database (`databases/bundled_emoji_provider*`), forcing Gboard to compile its emoji palette directly from the freshly mounted iOS font while strictly preserving Faster Voice Typing speech models (`superpacks/speech*`, `ondevice_recognizer*`).
+- **Xiaomi Theme Manager Cache Cleanup:** Added automated cache clearing and replacement for Xiaomi Theme Manager font directories (`/data/system/theme/fonts`, `/data/system/theme_magic/fonts`), ensuring active themes cannot override the system iOS emoji font.
+- **Expanded Boot Diagnostics:** Added verification and file size logging for `MiuiColorEmoji.ttf` and `MiuiEmoji.ttf` across `/system/fonts` and `/product/fonts` in `service.log`.
+
+### Previous: v2.0.14
 
 - **Fix for KernelSU / APatch / Meta-OverlayFS / Hybrid Mount Collision & Xiaomi HyperOS (Issue #11):** Resolved critical mounting failure where modules failed to mount on modern metamodules like `meta-overlayfs` (OverlayFS MetaModule) and `meta-hybrid_mount` (Hybrid Mount) with error 22 (EINVAL) or path conflict errors.
 - **Intelligent Partition Reconciliation (Anti-Collision):** Eliminates nested mount collisions between `$MODPATH/system/product` and `$MODPATH/product` by dynamically adapting module tree: on KernelSU/APatch, standalone partition trees (`/product`, `/system_ext`, `/system`) are cleanly separated without conflicting nested folders; on Magisk, files are unified under `$MODPATH/system/`.
