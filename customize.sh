@@ -223,6 +223,7 @@ IS_SAMSUNG=false
 IS_XIAOMI=false
 IS_OPPO=false
 IS_LG=false
+IS_HTC=false
 IS_HUAWEI=false
 IS_HONOR=false
 IS_NOTHING=false
@@ -395,12 +396,18 @@ if [ "$MANUFACTURER" = "fairphone" ] || [ "$BRAND" = "fairphone" ]; then
   IS_FAIRPHONE=true
 fi
 
+# HTC detection
+if [ "$MANUFACTURER" = "htc" ] || [ "$BRAND" = "htc" ]; then
+  IS_HTC=true
+fi
+
 ui_print "[*] Fabricante: $MANUFACTURER | Marca: $BRAND"
 [ "$IS_CUSTOM_AOSP" = true ] && ui_print "[✓] Custom AOSP ROM detectada (Axion OS / AOSP)"
 [ "$IS_SAMSUNG" = true ] && ui_print "[✓] Samsung/OneUI detectado"
 [ "$IS_XIAOMI" = true ] && ui_print "[✓] Xiaomi/MIUI/HyperOS detectado"
 [ "$IS_OPPO" = true ] && ui_print "[✓] OPPO/OnePlus/Realme detectado"
 [ "$IS_LG" = true ] && ui_print "[✓] LG detectado"
+[ "$IS_HTC" = true ] && ui_print "[✓] HTC detectado"
 [ "$IS_HUAWEI" = true ] && ui_print "[✓] Huawei/EMUI detectado"
 [ "$IS_HONOR" = true ] && ui_print "[✓] Honor/MagicOS detectado"
 [ "$IS_NOTHING" = true ] && ui_print "[✓] Nothing Phone detectado"
@@ -760,7 +767,10 @@ if [ "$IS_MODULE_UPDATE" = true ]; then
   fi
 
   # HTC
-  link_emoji "HTC_ColorEmoji.ttf"
+  if [ "$IS_HTC" = true ] || [ "$MANUFACTURER" = "htc" ] || [ "$BRAND" = "htc" ]; then
+    ui_print "[*] ROM detectada: HTC"
+    link_emoji "HTC_ColorEmoji.ttf"
+  fi
 
   # Huawei
   if [ "$IS_HUAWEI" = true ]; then
@@ -810,6 +820,9 @@ else
     link_emoji "OPFontEmoji.ttf"
     link_emoji "OnePlusColorEmoji.ttf"
     link_emoji "OnePlusEmoji.ttf"
+  fi
+  if [ "$IS_HTC" = true ] || [ "$MANUFACTURER" = "htc" ] || [ "$BRAND" = "htc" ]; then
+    link_emoji "HTC_ColorEmoji.ttf"
   fi
 fi
 
