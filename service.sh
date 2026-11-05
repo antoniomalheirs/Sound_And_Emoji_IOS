@@ -14,12 +14,19 @@ MODDIR="${0%/*}"
 
 # ─── Logging ─────────────────────────────────────────────────────────
 LOGFILE="$MODDIR/service.log"
+if [ -f "$LOGFILE" ]; then
+  log_size=$(wc -c < "$LOGFILE" 2>/dev/null | tr -d ' ')
+  if [ -n "$log_size" ] && [ "$log_size" -gt 204800 ]; then
+    mv -f "$LOGFILE" "${LOGFILE}.old" 2>/dev/null
+  fi
+fi
+
 log() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOGFILE" 2>/dev/null
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [SERVICE] $1" >> "$LOGFILE" 2>/dev/null
 }
 
 log "================================================"
-log "Sound_And_Emoji_IOS service.sh"
+log "Sound_And_Emoji_IOS service.sh started"
 log "Device: $(getprop ro.product.model)"
 log "Manufacturer: $(getprop ro.product.manufacturer)"
 log "Brand: $(getprop ro.product.brand)"
@@ -230,39 +237,196 @@ if [ -n "$AUDIO_BASE" ]; then
 fi
 
 
-# ─── Diagnostic: verify module files are mounted ─────────────────────
-log "INFO: ── Diagnostic: Checking if module files are visible ──"
-for check_path in \
-  "/system/product/media/audio/ui" \
-  "/product/media/audio/ui" \
-  "/system_ext/media/audio/ui" \
-  "/system/media/audio/ui" \
-  "/system/fonts"; do
-  if [ -d "$check_path" ]; then
-    file_count=$(ls "$check_path" 2>/dev/null | wc -l)
-    log "INFO: $check_path exists ($file_count files)"
+# ─── Diagnostic: Full device report for issue troubleshooting ─────────
+log "INFO: ══════════════════════════════════════════════════════"
+log "INFO: ══ DIAGNOSTIC REPORT — paste this in GitHub Issues ══"
+log "INFO: ══════════════════════════════════════════════════════"
+
+# ── Section 1: Partition layout ──
+log "DIAG: ── 1. Partition Layout ──"
+for part in /product /system_ext /vendor /odm /oem; do
+  real_path=$(readlink -f "$part" 2>/dev/null)
+  if [ -L "$part" ]; then
+    log "DIAG: $part → SYMLINK → $real_path"
+  elif [ -d "$part" ]; then
+    log "DIAG: $part → REAL PARTITION"
+  else
+    log "DIAG: $part → NOT FOUND"
   fi
 done
 
-# Check specific files
-for check_file in \
+# ── Section 2: Mount points (overlay detection) ──
+log "DIAG: ── 2. Overlay / Mount Status ──"
+for mnt in /system /product /system_ext; do
+  mount_info=$(mount 2>/dev/null | grep " $mnt " | head -1)
+  if [ -n "$mount_info" ]; then
+    log "DIAG: MOUNT $mnt → $mount_info"
+  else
+    log "DIAG: MOUNT $mnt → no dedicated mount entry"
+  fi
+done
+# Check if overlay is active
+overlay_count=$(mount 2>/dev/null | grep -c "overlay" || echo "0")
+log "DIAG: Active overlay mounts: $overlay_count"
+mount 2>/dev/null | grep "overlay" | while read -r line; do
+  log "DIAG:   $line"
+done
+
+# ── Section 3: Metamodule detection ──
+log "DIAG: ── 3. Metamodule Detection ──"
+for meta_dir in /data/adb/modules/meta-overlayfs \
+                /data/adb/modules/meta-hybrid_mount \
+                /data/adb/modules/NanoMount \
+                /data/adb/modules/Mountify \
+                /data/adb/modules/metamount; do
+  if [ -d "$meta_dir" ]; then
+    meta_ver=""
+    [ -f "$meta_dir/module.prop" ] && meta_ver=$(grep "^version=" "$meta_dir/module.prop" 2>/dev/null | cut -d= -f2)
+    meta_disabled=""
+    [ -f "$meta_dir/disable" ] && meta_disabled=" [DISABLED]"
+    log "DIAG: METAMODULE FOUND: $(basename "$meta_dir") v${meta_ver}${meta_disabled}"
+  fi
+done
+
+# KernelSU version
+ksu_ver=$(getprop ro.kernelsu.version 2>/dev/null)
+[ -z "$ksu_ver" ] && ksu_ver=$(cat /data/adb/ksu/version 2>/dev/null)
+[ -n "$ksu_ver" ] && log "DIAG: KernelSU version: $ksu_ver"
+# Magisk version
+magisk_ver=$(magisk -V 2>/dev/null)
+[ -n "$magisk_ver" ] && log "DIAG: Magisk version: $magisk_ver"
+
+# ── Section 4: Font configuration files ──
+log "DIAG: ── 4. Font Configuration Files ──"
+for xml_file in \
+  "/system/etc/fonts.xml" \
+  "/system/etc/font_fallback.xml" \
+  "/product/etc/fonts_customization.xml" \
+  "/system_ext/etc/fonts_customization.xml" \
+  "/vendor/etc/fonts_customization.xml"; do
+  if [ -f "$xml_file" ]; then
+    xml_size=$(wc -c < "$xml_file" 2>/dev/null | tr -d ' ')
+    log "DIAG: EXISTS: $xml_file ($xml_size bytes)"
+    # Extract emoji-related lines (case insensitive)
+    grep -in "emoji\|MiuiColor\|und-Zsye\|Zsye\|NotoColor" "$xml_file" 2>/dev/null | head -10 | while read -r match; do
+      log "DIAG:   → $match"
+    done
+  else
+    log "DIAG: NOT FOUND: $xml_file"
+  fi
+done
+
+# ── Section 5: Emoji font files — size comparison ──
+log "DIAG: ── 5. Emoji Font Files ──"
+# Our iOS font is ~33MB. Stock Xiaomi MiuiColorEmoji is typically ~10-16MB.
+# If the file size matches our font, the overlay is working.
+IOS_FONT_SIZE=""
+if [ -f "$MODDIR/system/fonts/NotoColorEmoji.ttf" ]; then
+  IOS_FONT_SIZE=$(wc -c < "$MODDIR/system/fonts/NotoColorEmoji.ttf" 2>/dev/null | tr -d ' ')
+  log "DIAG: MODULE iOS font size: $IOS_FONT_SIZE bytes"
+fi
+
+for emoji_file in \
   "/system/fonts/NotoColorEmoji.ttf" \
+  "/system/fonts/NotoColorEmojiFlags.ttf" \
+  "/system/fonts/NotoColorEmojiLegacy.ttf" \
   "/system/fonts/MiuiColorEmoji.ttf" \
   "/system/fonts/MiuiEmoji.ttf" \
   "/system/fonts/SamsungColorEmoji.ttf" \
+  "/system/fonts/OPFontEmoji.ttf" \
+  "/system/fonts/HwColorEmoji.ttf" \
   "/product/fonts/NotoColorEmoji.ttf" \
   "/product/fonts/MiuiColorEmoji.ttf" \
   "/product/fonts/MiuiEmoji.ttf" \
-  "/system/product/media/audio/ui/Lock.ogg" \
-  "/product/media/audio/ui/Lock.ogg" \
-  "/system/media/audio/ui/Lock.ogg"; do
-  if [ -f "$check_file" ]; then
-    log "INFO: File exists: $check_file ($(wc -c < "$check_file" 2>/dev/null | tr -d ' ') bytes)"
+  "/product/fonts/SamsungColorEmoji.ttf" \
+  "/system_ext/fonts/NotoColorEmoji.ttf" \
+  "/system_ext/fonts/MiuiColorEmoji.ttf"; do
+  if [ -f "$emoji_file" ]; then
+    fsize=$(wc -c < "$emoji_file" 2>/dev/null | tr -d ' ')
+    if [ -n "$IOS_FONT_SIZE" ] && [ "$fsize" = "$IOS_FONT_SIZE" ]; then
+      log "DIAG: ✅ $emoji_file ($fsize bytes) — MATCHES iOS font"
+    else
+      log "DIAG: ❌ $emoji_file ($fsize bytes) — STOCK/DIFFERENT (expected $IOS_FONT_SIZE)"
+    fi
   else
-    log "WARN: File missing: $check_file"
+    log "DIAG: ── $emoji_file — not present"
   fi
 done
-log "INFO: ── End diagnostic ──"
+
+# ── Section 6: Module directory structure ──
+log "DIAG: ── 6. Module Directory Structure ──"
+for mod_dir in \
+  "$MODDIR/system/fonts" \
+  "$MODDIR/product/fonts" \
+  "$MODDIR/system_ext/fonts" \
+  "$MODDIR/system/product/fonts"; do
+  if [ -d "$mod_dir" ]; then
+    mcount=$(ls "$mod_dir" 2>/dev/null | wc -l)
+    log "DIAG: EXISTS: $mod_dir ($mcount files)"
+  else
+    log "DIAG: ABSENT: $mod_dir"
+  fi
+done
+
+# ── Section 7: Audio paths verification ──
+log "DIAG: ── 7. Audio Paths ──"
+for audio_check in \
+  "/system/product/media/audio/ui/Lock.ogg" \
+  "/product/media/audio/ui/Lock.ogg" \
+  "/system/media/audio/ui/Lock.ogg" \
+  "/system_ext/media/audio/ui/Lock.ogg"; do
+  if [ -f "$audio_check" ]; then
+    asize=$(wc -c < "$audio_check" 2>/dev/null | tr -d ' ')
+    log "DIAG: ✅ $audio_check ($asize bytes)"
+  fi
+done
+
+# ── Section 8: Dynamic font delivery status ──
+log "DIAG: ── 8. Dynamic Font Delivery ──"
+if [ -d "/data/fonts/files" ]; then
+  dfont_count=$(ls /data/fonts/files/ 2>/dev/null | wc -l)
+  dfont_immutable=$(lsattr -d /data/fonts/files 2>/dev/null | grep -c "i" || echo "?")
+  log "DIAG: /data/fonts/files/ — $dfont_count files, immutable=$dfont_immutable"
+else
+  log "DIAG: /data/fonts/files/ — directory not found"
+fi
+[ -f "/data/system/font_config.xml" ] && log "DIAG: ⚠️ font_config.xml EXISTS (should be deleted)" || log "DIAG: font_config.xml cleaned ✅"
+[ -f "/data/fonts/config/config.xml" ] && log "DIAG: ⚠️ /data/fonts/config/config.xml EXISTS" || log "DIAG: /data/fonts/config/config.xml not present"
+
+# ── Section 9: Xiaomi-specific checks ──
+log "DIAG: ── 9. Xiaomi / HyperOS Specific ──"
+miui_ver=$(getprop ro.miui.ui.version.name 2>/dev/null)
+hyperos_ver=$(getprop ro.mi.os.version.name 2>/dev/null)
+[ -n "$miui_ver" ] && log "DIAG: MIUI version: $miui_ver"
+[ -n "$hyperos_ver" ] && log "DIAG: HyperOS version: $hyperos_ver"
+for theme_path in /data/system/theme/fonts /data/system/theme_magic/fonts; do
+  if [ -d "$theme_path" ]; then
+    tcontent=$(ls "$theme_path" 2>/dev/null)
+    if [ -n "$tcontent" ]; then
+      log "DIAG: ⚠️ Theme fonts active: $theme_path"
+      ls "$theme_path" 2>/dev/null | while read -r tf; do
+        log "DIAG:   → $tf"
+      done
+    else
+      log "DIAG: Theme cache clean: $theme_path (empty)"
+    fi
+  fi
+done
+
+# ── Section 10: Gboard emoji cache status ──
+log "DIAG: ── 10. Gboard Status ──"
+for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/0/com.google.android.inputmethod.latin; do
+  if [ -d "$gboard_dir" ]; then
+    bundled_db=$(ls "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null | wc -l)
+    emoji_files=$(ls "$gboard_dir/files/emoji"* 2>/dev/null | wc -l)
+    speech_models=$(ls "$gboard_dir/files/superpacks/speech"* 2>/dev/null | wc -l)
+    log "DIAG: Gboard ($gboard_dir): emoji_db=$bundled_db, emoji_files=$emoji_files, speech_models=$speech_models"
+  fi
+done
+
+log "INFO: ══════════════════════════════════════════════════════"
+log "INFO: ══ END DIAGNOSTIC REPORT                           ══"
+log "INFO: ══════════════════════════════════════════════════════"
 
 # ═════════════════════════════════════════════════════════════════════
 # EMOJI FIX — UNIVERSAL SCAN APPROACH
@@ -651,6 +815,198 @@ start_emoji_watcher() {
 }
 
 start_emoji_watcher
+
+# ─── Diagnostic Bundle Generator ──────────────────────────────────────
+generate_diagnostic_report() {
+  local report_file="$MODDIR/diagnostic_report.log"
+  local sd_report="/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log"
+  local sd_fallback="/sdcard/Sound_And_Emoji_IOS_diagnostic.log"
+
+  log "INFO: Generating Diagnostic Bundle..."
+
+  {
+    echo "================================================================================"
+    echo "       SOUND_AND_EMOJI_IOS — DIAGNOSTIC BUNDLE"
+    echo "       Generated: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "       Module Version: $(grep '^version=' "$MODDIR/module.prop" 2>/dev/null | cut -d= -f2) ($(grep '^versionCode=' "$MODDIR/module.prop" 2>/dev/null | cut -d= -f2))"
+    echo "       Issue Tracker: https://github.com/antoniomalheirs/Sound_And_Emoji_IOS/issues"
+    echo "================================================================================"
+    echo ""
+    echo "─── [1. EXECUTIVE HEALTH SUMMARY] ──────────────────────────────────────────"
+    echo "Device Model      : $(getprop ro.product.model 2>/dev/null)"
+    echo "Manufacturer      : $(getprop ro.product.manufacturer 2>/dev/null)"
+    echo "Brand             : $(getprop ro.product.brand 2>/dev/null)"
+    echo "Android OS        : $(getprop ro.build.version.release 2>/dev/null) (API $(getprop ro.build.version.sdk 2>/dev/null))"
+    echo "Security Patch    : $(getprop ro.build.version.security_patch 2>/dev/null)"
+    echo "Fingerprint       : $(getprop ro.build.fingerprint 2>/dev/null)"
+    echo "ROM Skin          : MIUI=$(getprop ro.miui.ui.version.name 2>/dev/null) | HyperOS=$(getprop ro.mi.os.version.name 2>/dev/null) | OneUI=$(getprop ro.build.version.oneui 2>/dev/null)"
+    echo "Root Manager      : $ROOT_MGR"
+
+    local meta_name="None detected"
+    for mdir in /data/adb/modules/meta-overlayfs /data/adb/modules/meta-hybrid_mount /data/adb/modules/NanoMount /data/adb/modules/Mountify /data/adb/modules/metamount; do
+      if [ -d "$mdir" ] && [ ! -f "$mdir/disable" ]; then
+        meta_name="$(basename "$mdir") v$(grep '^version=' "$mdir/module.prop" 2>/dev/null | cut -d= -f2)"
+        break
+      fi
+    done
+    echo "Active Metamodule : $meta_name"
+
+    local mod_ios_size=""
+    [ -f "$MODDIR/system/fonts/NotoColorEmoji.ttf" ] && mod_ios_size=$(wc -c < "$MODDIR/system/fonts/NotoColorEmoji.ttf" 2>/dev/null | tr -d ' ')
+
+    local sys_emoji_health="[FAIL] Not present"
+    if [ -f "/system/fonts/NotoColorEmoji.ttf" ]; then
+      local se_size=$(wc -c < "/system/fonts/NotoColorEmoji.ttf" 2>/dev/null | tr -d ' ')
+      [ "$se_size" = "$mod_ios_size" ] && sys_emoji_health="[PASS] Matches iOS font ($se_size bytes)" || sys_emoji_health="[WARN] Stock size ($se_size bytes vs expected $mod_ios_size)"
+    fi
+
+    local prod_emoji_health="[N/A] Partition absent"
+    if [ -d "/product/fonts" ]; then
+      local pe_check="/product/fonts/MiuiColorEmoji.ttf"
+      [ ! -f "$pe_check" ] && pe_check="/product/fonts/NotoColorEmoji.ttf"
+      if [ -f "$pe_check" ]; then
+        local pe_size=$(wc -c < "$pe_check" 2>/dev/null | tr -d ' ')
+        [ "$pe_size" = "$mod_ios_size" ] && prod_emoji_health="[PASS] Matches iOS font ($pe_size bytes)" || prod_emoji_health="[WARN] Stock size ($pe_size bytes vs expected $mod_ios_size)"
+      else
+        prod_emoji_health="[INFO] No emoji font file in /product/fonts"
+      fi
+    fi
+    echo "System Emoji (/system)  : $sys_emoji_health"
+    echo "Product Emoji (/product): $prod_emoji_health"
+
+    local audio_health="[FAIL] No audio base path found"
+    if [ -n "$AUDIO_BASE" ] && [ -f "$AUDIO_BASE/ui/Lock.ogg" ]; then
+      audio_health="[PASS] Active at $AUDIO_BASE"
+    fi
+    echo "Audio System            : $audio_health"
+
+    local gb_health="[N/A] Gboard not installed"
+    for gb in /data/data/com.google.android.inputmethod.latin /data/user/0/com.google.android.inputmethod.latin; do
+      if [ -d "$gb" ]; then
+        local b_db=$(ls "$gb/databases/bundled_emoji_provider"* 2>/dev/null | wc -l)
+        local sp_speech=$(ls "$gb/files/superpacks/speech"* 2>/dev/null | wc -l)
+        gb_health="[PASS] DB cleaned (active dbs: $b_db) | Voice models preserved ($sp_speech models)"
+        [ "$b_db" -gt 0 ] && gb_health="[WARN] DB re-indexed (dbs: $b_db) | Voice models: $sp_speech"
+        break
+      fi
+    done
+    echo "Gboard & Faster Voice   : $gb_health"
+    echo ""
+    echo "─── [2. PARTITION ARCHITECTURE & SYMLINKS] ───────────────────────────────"
+    for p in /system /product /system_ext /vendor /odm /oem; do
+      if [ -L "$p" ]; then
+        echo "$p → SYMLINK to $(readlink -f "$p" 2>/dev/null)"
+      elif [ -d "$p" ]; then
+        echo "$p → REAL DIRECTORY / PARTITION"
+      else
+        echo "$p → NOT PRESENT"
+      fi
+    done
+    echo ""
+    echo "─── [3. OVERLAYFS & MOUNT SUBSYSTEM] ─────────────────────────────────────"
+    mount 2>/dev/null | grep -E "overlay|modules|Sound_And_Emoji" || echo "No direct overlay/module mounts found via grep."
+    echo ""
+    echo "─── [4. FONT XML CONFIGURATIONS] ─────────────────────────────────────────"
+    for x in /system/etc/fonts.xml /system/etc/font_fallback.xml /product/etc/fonts_customization.xml /system_ext/etc/fonts_customization.xml; do
+      if [ -f "$x" ]; then
+        echo "FILE: $x ($(wc -c < "$x" 2>/dev/null | tr -d ' ') bytes)"
+        grep -in "emoji\|MiuiColor\|und-Zsye\|Zsye\|NotoColor" "$x" 2>/dev/null | head -15 | while read -r mline; do
+          echo "   $mline"
+        done
+      fi
+    done
+    echo ""
+    echo "─── [5. FONT ASSET SIZE COMPARISON AUDIT] ─────────────────────────────────"
+    echo "Reference iOS font in module: $mod_ios_size bytes"
+    for f in \
+      /system/fonts/NotoColorEmoji.ttf \
+      /system/fonts/NotoColorEmojiFlags.ttf \
+      /system/fonts/MiuiColorEmoji.ttf \
+      /system/fonts/MiuiEmoji.ttf \
+      /system/fonts/SamsungColorEmoji.ttf \
+      /product/fonts/NotoColorEmoji.ttf \
+      /product/fonts/MiuiColorEmoji.ttf \
+      /product/fonts/MiuiEmoji.ttf \
+      /system_ext/fonts/NotoColorEmoji.ttf \
+      /system_ext/fonts/MiuiColorEmoji.ttf; do
+      if [ -f "$f" ]; then
+        local fs=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+        if [ "$fs" = "$mod_ios_size" ]; then
+          echo "  [MATCH] $f ($fs bytes)"
+        else
+          echo "  [DIFF ] $f ($fs bytes)"
+        fi
+      fi
+    done
+    echo ""
+    echo "─── [6. AUDIO RESOLUTION & PROPERTIES AUDIT] ─────────────────────────────"
+    echo "Audio base detected : $AUDIO_BASE"
+    echo "All audio bases     :$AUDIO_BASES_ALL"
+    for prop in \
+      ro.config.ringtone \
+      ro.config.notification_sound \
+      ro.config.alarm_alert \
+      ro.config.lock_sound \
+      ro.config.unlock_sound \
+      ro.config.sound_fx_key; do
+      echo "  $prop = $(getprop "$prop" 2>/dev/null)"
+    done
+    echo ""
+    echo "─── [7. STAGE LOG: INSTALLATION (install.log)] ───────────────────────────"
+    if [ -f "$MODDIR/install.log" ]; then
+      cat "$MODDIR/install.log" 2>/dev/null
+    else
+      echo "install.log not found."
+    fi
+    echo ""
+    echo "─── [8. STAGE LOG: PRE-MOUNT (post-fs-data.log)] ─────────────────────────"
+    if [ -f "$MODDIR/post-fs-data.log" ]; then
+      cat "$MODDIR/post-fs-data.log" 2>/dev/null
+    else
+      echo "post-fs-data.log not found."
+    fi
+    echo ""
+    echo "─── [9. STAGE LOG: POST-MOUNT (post-mount.log)] ───────────────────────────"
+    if [ -f "$MODDIR/post-mount.log" ]; then
+      cat "$MODDIR/post-mount.log" 2>/dev/null
+    else
+      echo "post-mount.log not found."
+    fi
+    echo ""
+    echo "─── [10. STAGE LOG: BOOT-COMPLETED (boot-completed.log)] ──────────────────"
+    if [ -f "$MODDIR/boot-completed.log" ]; then
+      cat "$MODDIR/boot-completed.log" 2>/dev/null
+    else
+      echo "boot-completed.log not found."
+    fi
+    echo ""
+    echo "─── [11. STAGE LOG: SERVICE RUNTIME (service.log - tail 120)] ─────────────"
+    if [ -f "$LOGFILE" ]; then
+      tail -n 120 "$LOGFILE" 2>/dev/null
+    else
+      echo "service.log not found."
+    fi
+    echo ""
+    echo "================================================================================"
+    echo "                  END OF DIAGNOSTIC BUNDLE"
+    echo "================================================================================"
+  } > "$report_file" 2>/dev/null
+
+  # Export to user-accessible storage
+  local exported=false
+  if [ -d "/sdcard/Download" ]; then
+    cp -f "$report_file" "$sd_report" 2>/dev/null && chmod 644 "$sd_report" 2>/dev/null
+    log "INFO: Exported diagnostic bundle to: $sd_report"
+    exported=true
+  fi
+  if [ -d "/sdcard" ]; then
+    cp -f "$report_file" "$sd_fallback" 2>/dev/null && chmod 644 "$sd_fallback" 2>/dev/null
+    [ "$exported" = false ] && log "INFO: Exported diagnostic bundle to: $sd_fallback"
+  fi
+  log "INFO: Diagnostic Bundle generated successfully at $report_file"
+}
+
+generate_diagnostic_report
 
 log "INFO: Service completed."
 log "================================================"

@@ -43,6 +43,22 @@ detect_environment() {
 MOD_VER=$(grep "^version=" "$MODPATH/module.prop" | cut -d= -f2)
 [ -z "$MOD_VER" ] && MOD_VER="unknown"
 
+# ─── Installation Logging ───────────────────────────────────────────
+INSTALL_LOG="$MODPATH/install.log"
+log_inst() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [INSTALL] $1" >> "$INSTALL_LOG" 2>/dev/null
+}
+
+log_inst "================================================"
+log_inst "Sound_And_Emoji_IOS Installation started"
+log_inst "Module Version: ${MOD_VER}"
+log_inst "Device: $(getprop ro.product.model)"
+log_inst "Manufacturer: $(getprop ro.product.manufacturer)"
+log_inst "Brand: $(getprop ro.product.brand)"
+log_inst "Android: $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk))"
+log_inst "Fingerprint: $(getprop ro.build.fingerprint)"
+log_inst "================================================"
+
 ui_print " "
 ui_print "╔═══════════════════════════════════════╗"
 ui_print "║       Sound_And_Emoji_IOS ${MOD_VER}      ║"
@@ -52,6 +68,7 @@ ui_print " "
 
 # ── Detect root environment ──
 detect_environment
+log_inst "Root Manager: $ENV_NAME ($ENV_VER, code: $ENV_VER_CODE)"
 ui_print "[✓] Ambiente: $ENV_NAME"
 ui_print "[✓] Versão: $ENV_VER (code: $ENV_VER_CODE)"
 ui_print " "
@@ -693,6 +710,7 @@ link_emoji() {
   ln "$FONT_FILE" "$MODPATH/system/fonts/$font_name" 2>/dev/null || \
     cp "$FONT_FILE" "$MODPATH/system/fonts/$font_name" 2>/dev/null
   ui_print "[✓] Mapeado: $font_name"
+  log_inst "Mapped emoji font: $font_name"
   OEM_FOUND=true
 }
 
@@ -951,6 +969,8 @@ done
 
 # ── Summary ──
 sleep 1
+log_inst "Installation completed successfully."
+log_inst "================================================"
 ui_print "╔═══════════════════════════════════════╗"
 ui_print "║         Instalação Concluída!          ║"
 ui_print "║                                        ║"

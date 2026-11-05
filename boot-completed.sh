@@ -13,12 +13,19 @@ MODDIR="${0%/*}"
 
 # ─── Logging ─────────────────────────────────────────────────────────
 LOGFILE="$MODDIR/boot-completed.log"
+if [ -f "$LOGFILE" ]; then
+  log_size=$(wc -c < "$LOGFILE" 2>/dev/null | tr -d ' ')
+  if [ -n "$log_size" ] && [ "$log_size" -gt 102400 ]; then
+    mv -f "$LOGFILE" "${LOGFILE}.old" 2>/dev/null
+  fi
+fi
+
 log() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOGFILE" 2>/dev/null
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [BOOT-COMPLETED] $1" >> "$LOGFILE" 2>/dev/null
 }
 
 log "================================================"
-log "Sound_And_Emoji_IOS boot-completed.sh"
+log "Sound_And_Emoji_IOS boot-completed.sh started"
 log "Device: $(getprop ro.product.model)"
 log "Android: $(getprop ro.build.version.release) (API $(getprop ro.build.version.sdk))"
 log "================================================"

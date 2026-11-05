@@ -4,6 +4,24 @@
 
 # Changelogs
 
+#### V2.0.16 — Unified Logging & Diagnostic System + Automated Log Bundle Export
+- **UNIFIED LOGGING & DIAGNOSTICS:** Upgraded the entire module's logging subsystem into a unified diagnostic infrastructure across all lifecycle stages:
+  - **`customize.sh` (Installation):** Added persistent `$MODPATH/install.log` capturing root manager details, metamodule status, device properties, audio candidate scans, and OEM font mappings.
+  - **`post-fs-data.sh` (Pre-mount):** Added structured `$MODDIR/post-fs-data.log` tracking dynamic font locks (`/data/fonts/files`), font_config removals, GMS cache wipes, Messenger cache sweeps, Gboard emoji database clearing, and Xiaomi theme cache cleanup.
+  - **`post-mount.sh` (Post-mount):** Added `$MODDIR/post-mount.log` logging SELinux context enforcement across `/system`, `/product`, and `/system_ext`.
+  - **`boot-completed.sh` (Boot Completed):** Added log rotation (>100KB rollover) and structured stage tags.
+  - **`service.sh` (Runtime Service):** Added log rotation (>200KB rollover) and automated report consolidation.
+- **AUTOMATED DIAGNOSTIC BUNDLE GENERATION:** At the conclusion of late-start services, `service.sh` automatically compiles a unified diagnostic report (`diagnostic_report.log`) featuring:
+  - Executive Health Summary (System emoji health, Product emoji health, Audio health, Gboard database status, Faster Voice Typing model preservation).
+  - Hardware & OS Fingerprint (Device model, Android version, SDK, Security Patch, MIUI/HyperOS/OneUI skin versions, Root manager, Metamodules).
+  - Partition & Symlink Architecture matrix (`/product`, `/system_ext`, `/vendor`, `/odm`, `/oem`).
+  - OverlayFS & Mount Subsystem audit.
+  - Font XML inspection (`fonts.xml`, `font_fallback.xml`, `fonts_customization.xml`).
+  - Byte-by-byte font asset size comparison table against reference iOS fonts.
+  - Aggregated stage logs (Install, Post-FS-Data, Post-Mount, Boot-Completed, Service).
+- **ONE-CLICK USER ACCESSIBILITY (Zero-Root Log Sharing):** The diagnostic bundle is automatically exported to `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` and `/sdcard/Sound_And_Emoji_IOS_diagnostic.log`. Users can now attach the complete diagnostic file directly to GitHub issues using their standard phone Files/Downloads app without needing a root file explorer or terminal emulator.
+- **ON-DEMAND DIAGNOSTIC TOOL (`dump_logs.sh`):** Added a standalone root utility script in the module root (`/data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh`). Developers and users can run `su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh` anytime from Termux or ADB shell to generate an instant diagnostic report.
+
 #### V2.0.15 — Fix for Xiaomi HyperOS Primary Emoji Font (MiuiColorEmoji.ttf) & Gboard Database Re-indexing
 - **FIX (Issue #11 — Emojis Not Showing in Gboard/Messaging on Xiaomi HyperOS):** Fixed critical issue where Xiaomi HyperOS devices continued showing stock Android emojis across Gboard, Google Messages, Google Voice, and the system UI while emojis only worked in Facebook Messenger.
 - **ROOT CAUSE (Xiaomi HyperOS Font Fallback Chain):** In Xiaomi's `fonts.xml` (or `font_fallback.xml`), `<family lang="und-Zsye">` designates `MiuiColorEmoji.ttf` as the primary emoji font with higher priority over `NotoColorEmoji.ttf`. In previous releases, only `MiuiEmoji.ttf` was mapped, leaving `MiuiColorEmoji.ttf` unreplaced in `/system/fonts` and `/product/fonts`. Consequently, Android's font engine on HyperOS loaded the unreplaced stock `MiuiColorEmoji.ttf`.

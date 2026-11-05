@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.15-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.16-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -487,6 +487,21 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 ## 🔧 Troubleshooting
 
+### 📊 Diagnostic Report (Attach to GitHub Issues)
+
+The module automatically generates a comprehensive diagnostic report on every boot:
+
+- **Saved on device:** `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` (also at `/sdcard/Sound_And_Emoji_IOS_diagnostic.log`)
+- **Zero-root access required:** You can find this file directly inside your phone's default **Files** or **Downloads** app!
+- **Attach to Issues:** If you experience any issues, simply open a new issue on GitHub and attach this file. It contains the complete status of partitions, metamodules, font sizes, audio paths, Gboard cache, and boot stage logs.
+
+To generate a fresh diagnostic report on demand from a root terminal (Termux / ADB):
+```sh
+su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
+```
+
+---
+
 <details>
 <summary><b>Sounds not changing after reboot</b></summary>
 
@@ -582,7 +597,14 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.15
+### Latest: v2.0.16
+
+- **Unified Logging & Diagnostic System:** Upgraded the module's entire diagnostic logging infrastructure across all lifecycle stages (`customize.sh`, `post-fs-data.sh`, `post-mount.sh`, `boot-completed.sh`, `service.sh`).
+- **Automated Diagnostic Bundle:** `service.sh` automatically compiles a unified diagnostic report (`diagnostic_report.log`) with an executive health summary, device hardware fingerprint, partition and symlink matrix, overlay mount status, and font size audits.
+- **Zero-Root File Sharing:** Automatically exports the diagnostic bundle directly to `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log`, allowing users to attach the log to GitHub issues using their standard phone Files app without needing root access.
+- **On-Demand Tool (`dump_logs.sh`):** Added a root terminal helper (`/data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh`) to regenerate and export the diagnostic report anytime on demand.
+
+### Previous: v2.0.15
 
 - **Fix for Xiaomi HyperOS Primary Emoji Font (`MiuiColorEmoji.ttf`) & Gboard Database Re-indexing (Issue #11):** Resolved issue where Xiaomi HyperOS devices continued displaying stock Android emojis across Gboard, Google Messages, Google Voice, and system UI while emojis only worked in Facebook Messenger.
 - **Root Cause (HyperOS `fonts.xml` Priority):** In Xiaomi HyperOS, the system font configuration (`/system/etc/fonts.xml`) defines `MiuiColorEmoji.ttf` as the primary font in the `<family lang="und-Zsye">` fallback chain before `NotoColorEmoji.ttf`. Previous module builds only linked `MiuiEmoji.ttf`, leaving `MiuiColorEmoji.ttf` stock and unreplaced.
