@@ -424,6 +424,125 @@ ui_print "[*] Fabricante: $MANUFACTURER | Marca: $BRAND"
 [ "$IS_TCL" = true ] && ui_print "[✓] TCL/Alcatel detectado"
 [ "$IS_FAIRPHONE" = true ] && ui_print "[✓] Fairphone detectado"
 
+# ── Xiaomi HyperOS: Detecção de DisableMiFontOverlay ──
+# O HyperOS tem um serviço proprietário (MiFontOverlay) que opera no nível
+# do Zygote e FORÇA fontes originais em memória, ignorando substituições no
+# filesystem. Sem desabilitar esse serviço, emojis iOS NÃO serão exibidos.
+# O módulo DisableMiFontOverlay (por YuKongA) intercepta e desabilita esse mecanismo.
+if [ "$IS_XIAOMI" = true ]; then
+  MIFONT_OVERLAY_DISABLED=false
+
+  # Verificar se DisableMiFontOverlay está instalado e ativo
+  if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
+    MIFONT_OVERLAY_DISABLED=true
+    ui_print "[✓] DisableMiFontOverlay detectado — emojis protegidos"
+  fi
+
+  # Verificar variantes de nome (caso o módulo tenha nome diferente)
+  if [ "$MIFONT_OVERLAY_DISABLED" = false ]; then
+    for mifont_dir in /data/adb/modules/*/; do
+      if [ -f "${mifont_dir}module.prop" ] && [ ! -f "${mifont_dir}disable" ]; then
+        if grep -qi "DisableMiFontOverlay\|MiFontOverlay\|disable.*mi.*font.*overlay" "${mifont_dir}module.prop" 2>/dev/null; then
+          MIFONT_OVERLAY_DISABLED=true
+          mifont_name=$(grep "^name=" "${mifont_dir}module.prop" 2>/dev/null | cut -d= -f2)
+          ui_print "[✓] MiFontOverlay bypass detectado: $mifont_name"
+          break
+        fi
+      fi
+    done
+  fi
+
+  if [ "$MIFONT_OVERLAY_DISABLED" = false ]; then
+    ui_print " "
+    ui_print "╔════════════════════════════════════════════╗"
+    ui_print "║  ⚠ AVISO IMPORTANTE PARA XIAOMI/HyperOS!  ║"
+    ui_print "║                                            ║"
+    ui_print "║  O HyperOS tem um serviço que FORÇA fontes ║"
+    ui_print "║  originais, ignorando substituições.       ║"
+    ui_print "║                                            ║"
+    ui_print "║  Para EMOJIS iOS funcionarem, instale:     ║"
+    ui_print "║  → DisableMiFontOverlay (por YuKongA)      ║"
+    ui_print "║  → Requer Zygisk / ZygiskNext ativo        ║"
+    ui_print "║                                            ║"
+    ui_print "║  github.com/YuKongA/DisableMiFontOverlay   ║"
+    ui_print "║                                            ║"
+    ui_print "║  Sons e fonte SF Pro NÃO são afetados.     ║"
+    ui_print "╚════════════════════════════════════════════╝"
+    ui_print " "
+    log_inst "WARNING: DisableMiFontOverlay NOT found — emojis may not work on HyperOS"
+    sleep 2
+  fi
+fi
+
+# ── Detecção de gbl_root_canoe / Fake Locked Bootloader ──
+# gbl_root_canoe é uma ferramenta EDK2 para Snapdragon 8 Gen5/Elite que
+# simula bootloader travado via exploit no ABL/GBL da Qualcomm. Isso pode
+# afetar como OverlayFS monta os arquivos do módulo.
+IS_CANOE=false
+CANOE_REASONS=""
+
+# Método 1: Verificar partição efisp (específica do canoe)
+for efisp_path in \
+  /dev/block/by-name/efisp \
+  /dev/block/bootdevice/by-name/efisp \
+  /dev/block/platform/soc/*/by-name/efisp; do
+  if [ -e "$efisp_path" ]; then
+    IS_CANOE=true
+    CANOE_REASONS="efisp partition"
+    break
+  fi
+done
+
+# Método 2: Verificar módulo canoe instalado
+for canoe_dir in /data/adb/modules/gbl_root_canoe /data/adb/modules/canoe /data/adb/modules/*canoe*; do
+  if [ -d "$canoe_dir" ] 2>/dev/null; then
+    IS_CANOE=true
+    CANOE_REASONS="${CANOE_REASONS:+$CANOE_REASONS; }canoe module dir"
+    break
+  fi
+done
+
+# Método 3: Boot state faked (bootloader locked + root ativo)
+if [ "$IS_CANOE" = false ]; then
+  VERIFIED_STATE=$(getprop ro.boot.verifiedbootstate 2>/dev/null)
+  FLASH_LOCKED=$(getprop ro.boot.flash.locked 2>/dev/null)
+  if [ "$VERIFIED_STATE" = "green" ] && { [ "$IS_KSU" = true ] || [ "$IS_MAGISK" = true ] || [ "$IS_APATCH" = true ]; }; then
+    IS_CANOE=true
+    CANOE_REASONS="${CANOE_REASONS:+$CANOE_REASONS; }green+root (possible fake lock)"
+  fi
+fi
+
+if [ "$IS_CANOE" = true ]; then
+  ui_print "[⚠] gbl_root_canoe / Fake Locked BL detectado"
+  log_inst "CANOE environment detected: $CANOE_REASONS"
+
+  # Verificar suporte a OverlayFS no kernel
+  OVERLAYFS_SUPPORTED=false
+  if grep -q "overlay" /proc/filesystems 2>/dev/null; then
+    OVERLAYFS_SUPPORTED=true
+    ui_print "[✓] Kernel suporta OverlayFS — OK"
+  else
+    ui_print "[!] Kernel SEM suporte a OverlayFS detectado!"
+    log_inst "WARNING: Kernel lacks CONFIG_OVERLAY_FS — module may not work"
+  fi
+
+  # Verificar metamodule (necessário para KSU com canoe)
+  if [ "$IS_KSU" = true ] && [ "$METAMODULE_FOUND" = false ]; then
+    ui_print " "
+    ui_print "╔════════════════════════════════════════════╗"
+    ui_print "║  ⚠ AVISO: Ambiente canoe + KernelSU sem   ║"
+    ui_print "║  metamodule! O módulo provavelmente NÃO    ║"
+    ui_print "║  vai funcionar. Instale um metamodule:     ║"
+    ui_print "║  → meta-overlayfs                          ║"
+    ui_print "║  → Hybrid Mount                            ║"
+    ui_print "║  → NanoMount                               ║"
+    ui_print "╚════════════════════════════════════════════╝"
+    ui_print " "
+    log_inst "WARNING: canoe + KSU without metamodule — module likely won't work"
+    sleep 2
+  fi
+fi
+
 # ── Mapeamento Inteligente de Áudios OEM ──
 # UNCONDITIONAL: We always create OEM-named copies based on the detected
 # manufacturer. This ensures audio works regardless of which partition
@@ -902,6 +1021,115 @@ else
   ui_print " "
 fi
 
+# ─── Xiaomi HyperOS: Overlay do fonts_customization.xml ─────────────
+# O HyperOS usa /product/etc/fonts_customization.xml para definir a cadeia
+# de fallback de fontes. Este XML aponta para MiuiColorEmoji.ttf como fonte
+# de emojis prioritária. Mesmo substituindo o ARQUIVO, o FontManagerService
+# usa o XML para resolver qual arquivo carregar. Precisamos redirecionar
+# a referência no XML para apontar para NotoColorEmoji.ttf (nosso emoji iOS).
+#
+# SEGURANÇA: 6 camadas de proteção implementadas:
+#   1. Só executa em dispositivos Xiaomi genuínos
+#   2. Só se o arquivo XML original existir
+#   3. Copia o original INTACTO (preserva toda a estrutura)
+#   4. sed faz substituição cirúrgica (só nome de arquivo, sem alterar XML)
+#   5. Valida que o resultado não está vazio
+#   6. Verifica que tags XML essenciais estão presentes
+#   Fallback: Se qualquer validação falhar, remove o overlay (sistema usa original)
+if [ "$IS_XIAOMI" = true ]; then
+  ui_print "[*] Xiaomi/HyperOS: Verificando fonts_customization.xml..."
+
+  FONT_CUSTOM_XML=""
+  for xml_candidate in \
+    /product/etc/fonts_customization.xml \
+    /system/product/etc/fonts_customization.xml \
+    /system_ext/etc/fonts_customization.xml \
+    /system/etc/fonts_customization.xml; do
+    if [ -f "$xml_candidate" ]; then
+      FONT_CUSTOM_XML="$xml_candidate"
+      break
+    fi
+  done
+
+  if [ -n "$FONT_CUSTOM_XML" ]; then
+    ui_print "[✓] Encontrado: $FONT_CUSTOM_XML"
+    log_inst "Found fonts_customization.xml at: $FONT_CUSTOM_XML"
+
+    # Determinar destino no módulo baseado no root manager
+    DEST_XML=""
+    if [ "$IS_KSU" = true ] || [ "$IS_APATCH" = true ] || [ "$METAMODULE_FOUND" = true ]; then
+      # KernelSU/APatch: partições independentes na raiz
+      case "$FONT_CUSTOM_XML" in
+        /product/*) DEST_XML="$MODPATH${FONT_CUSTOM_XML}" ;;
+        /system/product/*) DEST_XML="$MODPATH/product/etc/fonts_customization.xml" ;;
+        /system_ext/*) DEST_XML="$MODPATH${FONT_CUSTOM_XML}" ;;
+        *) DEST_XML="$MODPATH${FONT_CUSTOM_XML}" ;;
+      esac
+    else
+      # Magisk: tudo sob /system
+      case "$FONT_CUSTOM_XML" in
+        /system/*) DEST_XML="$MODPATH${FONT_CUSTOM_XML}" ;;
+        /product/*) DEST_XML="$MODPATH/system${FONT_CUSTOM_XML}" ;;
+        /system_ext/*) DEST_XML="$MODPATH/system${FONT_CUSTOM_XML}" ;;
+        *) DEST_XML="$MODPATH/system${FONT_CUSTOM_XML}" ;;
+      esac
+    fi
+
+    # PROTEÇÃO 2: Criar diretório e copiar original INTACTO
+    mkdir -p "$(dirname "$DEST_XML")" 2>/dev/null
+    cp -f "$FONT_CUSTOM_XML" "$DEST_XML" 2>/dev/null
+
+    if [ -f "$DEST_XML" ]; then
+      FONT_XML_MODIFIED=false
+
+      # PROTEÇÃO 4: Substituições cirúrgicas — APENAS nome de arquivo, sem alterar XML
+      if grep -q "MiuiColorEmoji" "$DEST_XML" 2>/dev/null; then
+        sed -i 's/MiuiColorEmoji\.ttf/NotoColorEmoji.ttf/g' "$DEST_XML" 2>/dev/null
+        FONT_XML_MODIFIED=true
+        ui_print "[✓] MiuiColorEmoji → NotoColorEmoji no XML"
+        log_inst "Patched fonts_customization.xml: MiuiColorEmoji -> NotoColorEmoji"
+      fi
+
+      if grep -q "MiuiEmoji" "$DEST_XML" 2>/dev/null; then
+        sed -i 's/MiuiEmoji\.ttf/NotoColorEmoji.ttf/g' "$DEST_XML" 2>/dev/null
+        FONT_XML_MODIFIED=true
+        ui_print "[✓] MiuiEmoji → NotoColorEmoji no XML"
+        log_inst "Patched fonts_customization.xml: MiuiEmoji -> NotoColorEmoji"
+      fi
+
+      if [ "$FONT_XML_MODIFIED" = true ]; then
+        # PROTEÇÃO 5: Validar que o arquivo resultante não está vazio
+        if [ ! -s "$DEST_XML" ]; then
+          ui_print "[!] XML vazio após patch — removendo overlay (usando original)"
+          rm -f "$DEST_XML" 2>/dev/null
+          log_inst "ERROR: fonts_customization.xml empty after patch — removed overlay"
+        # PROTEÇÃO 6: Verificar que tags XML essenciais existem
+        elif ! grep -q "<" "$DEST_XML" 2>/dev/null; then
+          ui_print "[!] XML sem tags após patch — removendo overlay (usando original)"
+          rm -f "$DEST_XML" 2>/dev/null
+          log_inst "ERROR: fonts_customization.xml has no XML tags after patch — removed overlay"
+        else
+          ui_print "[✓] fonts_customization.xml configurado para emojis iOS"
+          log_inst "fonts_customization.xml overlay OK at: $DEST_XML"
+        fi
+      else
+        # Nenhuma referência Miui encontrada no XML — não precisamos do overlay
+        ui_print "[*] XML sem referências MIUI emoji — overlay não necessário"
+        rm -f "$DEST_XML" 2>/dev/null
+        # Remover diretório se ficou vazio
+        rmdir "$(dirname "$DEST_XML")" 2>/dev/null
+        log_inst "fonts_customization.xml has no MIUI emoji refs — no overlay needed"
+      fi
+    else
+      ui_print "[!] Falha ao copiar XML — continuando sem overlay"
+      log_inst "WARNING: Failed to copy fonts_customization.xml"
+    fi
+  else
+    ui_print "[*] fonts_customization.xml não encontrado — usando fallback AOSP"
+    log_inst "fonts_customization.xml not found on device — AOSP fallback"
+  fi
+fi
+
 # ── Clear dynamic font caches & Gboard emoji cache (ONE TIME, only during module installation) ──
 ui_print "[*] Limpando fontes dinâmicas..."
 rm -rf /data/fonts/files/* 2>/dev/null
@@ -994,4 +1222,24 @@ ui_print "║  ✓ Compatível com $ENV_NAME            ║"
 ui_print "║                                        ║"
 ui_print "║  Reinicie o dispositivo para aplicar.  ║"
 ui_print "╚═══════════════════════════════════════╝"
+
+# ── Xiaomi/HyperOS post-summary status ──
+if [ "$IS_XIAOMI" = true ]; then
+  ui_print " "
+  ui_print "[*] ── Status HyperOS ──"
+  if [ "$MIFONT_OVERLAY_DISABLED" = true ]; then
+    ui_print "[✓] MiFontOverlay: DESABILITADO (emojis OK)"
+  else
+    ui_print "[⚠] MiFontOverlay: NÃO desabilitado (emojis podem não funcionar)"
+    ui_print "    → Instale DisableMiFontOverlay + Zygisk"
+  fi
+  if [ "$IS_CANOE" = true ]; then
+    ui_print "[⚠] Ambiente: gbl_root_canoe detectado"
+    if [ "$METAMODULE_FOUND" = true ]; then
+      ui_print "[✓] Metamodule: encontrado (overlay OK)"
+    elif [ "$IS_KSU" = true ] || [ "$IS_APATCH" = true ]; then
+      ui_print "[⚠] Metamodule: NÃO encontrado (instale meta-overlayfs)"
+    fi
+  fi
+fi
 ui_print " "

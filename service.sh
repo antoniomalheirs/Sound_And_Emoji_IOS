@@ -413,6 +413,69 @@ for theme_path in /data/system/theme/fonts /data/system/theme_magic/fonts; do
   fi
 done
 
+# MiFontOverlay bypass detection
+mifont_active="NOT FOUND"
+if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
+  mifont_active="DISABLED (DisableMiFontOverlay installed)"
+else
+  for mfd in /data/adb/modules/*/; do
+    if [ -f "${mfd}module.prop" ] && [ ! -f "${mfd}disable" ]; then
+      if grep -qi "MiFontOverlay" "${mfd}module.prop" 2>/dev/null; then
+        mf_name=$(grep "^name=" "${mfd}module.prop" 2>/dev/null | cut -d= -f2)
+        mifont_active="DISABLED ($mf_name)"
+        break
+      fi
+    fi
+  done
+fi
+log "DIAG: MiFontOverlay status: $mifont_active"
+
+# fonts_customization.xml status
+for fcxml in /product/etc/fonts_customization.xml /system/product/etc/fonts_customization.xml; do
+  if [ -f "$fcxml" ]; then
+    fcxml_has_miui=$(grep -c "MiuiColorEmoji\|MiuiEmoji" "$fcxml" 2>/dev/null || echo "0")
+    if [ "$fcxml_has_miui" -gt 0 ]; then
+      log "DIAG: ⚠️ $fcxml still references MIUI emoji ($fcxml_has_miui refs) — overlay may not be active"
+    else
+      log "DIAG: ✅ $fcxml has NO MIUI emoji references — overlay working or AOSP"
+    fi
+  fi
+done
+
+# ── Section 9b: gbl_root_canoe / Fake Lock Detection ──
+log "DIAG: ── 9b. gbl_root_canoe / Bootloader Status ──"
+vb_state=$(getprop ro.boot.verifiedbootstate 2>/dev/null)
+flash_lock=$(getprop ro.boot.flash.locked 2>/dev/null)
+log "DIAG: Verified boot state: ${vb_state:-unknown}"
+log "DIAG: Flash locked: ${flash_lock:-unknown}"
+
+canoe_detected="NO"
+if [ -e "/dev/block/by-name/efisp" ] || [ -e "/dev/block/bootdevice/by-name/efisp" ]; then
+  canoe_detected="YES (efisp partition found)"
+fi
+for cd in /data/adb/modules/gbl_root_canoe /data/adb/modules/canoe; do
+  [ -d "$cd" ] && canoe_detected="YES (module dir: $cd)"
+done
+if [ "$vb_state" = "green" ] && [ "$ROOT_MGR" != "Unknown" ]; then
+  canoe_detected="${canoe_detected} + green boot state with root (possible fake lock)"
+fi
+log "DIAG: gbl_root_canoe: $canoe_detected"
+
+# OverlayFS kernel support
+if grep -q "overlay" /proc/filesystems 2>/dev/null; then
+  log "DIAG: ✅ Kernel OverlayFS: supported"
+else
+  log "DIAG: ❌ Kernel OverlayFS: NOT supported (CONFIG_OVERLAY_FS missing)"
+fi
+
+# /data/fonts/config/ status
+if [ -d "/data/fonts/config" ]; then
+  dfc_count=$(ls -1A /data/fonts/config/ 2>/dev/null | wc -l)
+  log "DIAG: /data/fonts/config/ — $dfc_count files"
+else
+  log "DIAG: /data/fonts/config/ — not present"
+fi
+
 # ── Section 10: Gboard emoji cache status ──
 log "DIAG: ── 10. Gboard Status ──"
 for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/0/com.google.android.inputmethod.latin; do
@@ -620,6 +683,59 @@ clean_system_emoji_caches() {
 }
 
 clean_system_emoji_caches
+
+# ─── Extended HyperOS/MIUI Font Cache Cleanup (Boot-time) ────────────
+# Runs on Xiaomi devices only. Extends the standard cleanup above with
+# Theme Manager app cache, /data/fonts/config/, and APEX caches.
+clean_hyperos_extended_caches() {
+  local hyperos_ver=$(getprop ro.mi.os.version.name 2>/dev/null)
+  local miui_ver=$(getprop ro.miui.ui.version.name 2>/dev/null)
+
+  if [ -z "$hyperos_ver" ] && [ -z "$miui_ver" ]; then
+    return
+  fi
+
+  log "INFO: HyperOS/MIUI extended font cache cleanup..."
+
+  # 1. FontManagerService runtime config
+  if [ -d "/data/fonts/config" ]; then
+    rm -rf /data/fonts/config/* 2>/dev/null
+    log "INFO: Cleaned /data/fonts/config/"
+  fi
+
+  # 2. Theme Manager app cache
+  for tmgr_dir in /data/data/com.android.thememanager/cache \
+                  /data/data/com.android.thememanager/code_cache \
+                  /data/user/*/com.android.thememanager/cache \
+                  /data/user/*/com.android.thememanager/code_cache; do
+    if [ -d "$tmgr_dir" ]; then
+      rm -rf "$tmgr_dir"/* 2>/dev/null
+    fi
+  done
+
+  # 3. Theme default directory emoji caches
+  for tdefault in /data/system/theme/default; do
+    if [ -d "$tdefault" ]; then
+      rm -rf "$tdefault"/*emoji* 2>/dev/null
+      rm -rf "$tdefault"/*Emoji* 2>/dev/null
+    fi
+  done
+
+  # 4. APEX font module caches (Android 14+)
+  for apex_dir in /data/misc/apexdata/com.android.i18n; do
+    if [ -d "$apex_dir" ]; then
+      local apex_emoji=$(find "$apex_dir" -iname "*emoji*" 2>/dev/null | wc -l)
+      if [ "$apex_emoji" -gt 0 ]; then
+        find "$apex_dir" -iname "*emoji*" -delete 2>/dev/null
+        log "INFO: Cleaned $apex_emoji APEX emoji font(s) from $apex_dir"
+      fi
+    fi
+  done
+
+  log "INFO: HyperOS extended cleanup complete."
+}
+
+clean_hyperos_extended_caches
 
 # ─── Global Emoji Font Replacement (ALL environments) ────────────────
 # Runs on ALL root managers: Magisk, KernelSU, KernelSU Next, and APatch.

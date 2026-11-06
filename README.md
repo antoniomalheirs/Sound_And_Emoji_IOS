@@ -211,6 +211,33 @@ Works on AOSP, Pixel, LineageOS, crDroid, EvolutionX, AxionOS, MIUI, HyperOS, On
 > [!IMPORTANT]
 > **KernelSU / KernelSU Next users:** You **MUST** install a metamodule (e.g., `meta-overlayfs`) for the module to mount files into `/system/`. The installer will warn you if none is detected.
 
+### Xiaomi HyperOS 3/4 — Special Requirements
+
+Xiaomi HyperOS implements a proprietary **MiFontOverlay** service that forcefully overrides system fonts at the Zygote level, ignoring any file-level replacements. To make **iOS emojis** work on HyperOS devices, you need an additional module:
+
+| Requirement | Details |
+| :--- | :--- |
+| **DisableMiFontOverlay** | [YuKongA/DisableMiFontOverlay](https://github.com/YuKongA/DisableMiFontOverlay) — Zygisk module that disables Xiaomi's font override |
+| **Zygisk / ZygiskNext** | Required for DisableMiFontOverlay to function |
+| **Metamodule** (KSU/APatch) | `meta-overlayfs`, `Hybrid Mount`, or `NanoMount` |
+
+> [!NOTE]
+> **Sounds and SF Pro font work normally** on HyperOS without any extra modules. Only emoji replacement requires DisableMiFontOverlay.
+
+The module installer will **automatically detect** HyperOS and warn you if DisableMiFontOverlay is missing.
+
+### gbl_root_canoe (Fake Locked Bootloader)
+
+For devices rooted via **gbl_root_canoe** (Snapdragon 8 Gen5 / 8 Elite with fake locked bootloader):
+
+| Requirement | Details |
+| :--- | :--- |
+| **Metamodule** | **Required** — `meta-overlayfs` or `Hybrid Mount` (OverlayFS must mount module files) |
+| **Kernel OverlayFS** | Kernel must have `CONFIG_OVERLAY_FS=y` (check: `cat /proc/filesystems \| grep overlay`) |
+| **DisableMiFontOverlay** | Required for emoji on HyperOS (same as above) |
+
+The installer automatically detects gbl_root_canoe environments and provides specific warnings.
+
 ---
 
 ## 🚀 Installation
@@ -547,6 +574,35 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 1. **You MUST install a metamodule** (e.g., `meta-overlayfs`) for KernelSU to mount files into `/system/`
 2. The installer will show a warning if no metamodule is detected
 3. Install `meta-overlayfs` → Reboot → Re-flash this module → Reboot again
+
+</details>
+
+<details>
+<summary><b>Xiaomi HyperOS: Emojis not changing (still showing Xiaomi emojis)</b></summary>
+
+HyperOS has a proprietary **MiFontOverlay** service that forces original fonts at the Zygote level, overriding any file replacements. To fix:
+
+1. **Install [DisableMiFontOverlay](https://github.com/YuKongA/DisableMiFontOverlay)** — a Zygisk module that disables Xiaomi's font override
+2. **Enable Zygisk** in your root manager (Magisk → Settings → Zygisk ON, or install ZygiskNext for KernelSU/APatch)
+3. Reboot the device
+4. If emojis still don't change, also clear Xiaomi Themes cache: **Settings → Apps → Themes → Clear Data**
+5. Run the diagnostic tool to check status: `su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh`
+6. Look for `MiFontOverlay` and `fonts_custom.xml` lines in the report
+
+> **Note:** Sounds and SF Pro font work normally without DisableMiFontOverlay. Only emoji replacement requires it.
+
+</details>
+
+<details>
+<summary><b>gbl_root_canoe: Module not working at all</b></summary>
+
+Devices rooted via gbl_root_canoe (fake locked bootloader) have extra requirements:
+
+1. **Install a metamodule** — `meta-overlayfs`, `Hybrid Mount`, or `NanoMount` is required for OverlayFS to work
+2. **Check kernel OverlayFS support:** `su -c "cat /proc/filesystems | grep overlay"` — if empty, your kernel lacks `CONFIG_OVERLAY_FS`
+3. **Try switching mount method** in KernelSU Manager → Settings → try toggling between OverlayFS and Magic Mount
+4. **Check KSU logs:** `su -c "cat /data/adb/ksud.log | tail -50"` — look for mount errors
+5. Run the diagnostic: `su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh` and attach to your GitHub issue
 
 </details>
 

@@ -92,5 +92,52 @@ for theme_font in /data/system/theme/fonts /data/system/theme_magic/fonts; do
 done
 [ "$theme_cleaned" -gt 0 ] && log "Cleaned Xiaomi theme emoji font cache(s)"
 
+# ─── Extended HyperOS/MIUI Font Cache Cleanup ────────────────────────
+# Only runs on Xiaomi devices. Cleans additional caches that the standard
+# cleanup above doesn't cover: Theme Manager app cache, /data/fonts/config/,
+# and APEX font module caches (Android 14+).
+HYPEROS_VER_PFD=$(getprop ro.mi.os.version.name 2>/dev/null)
+MIUI_VER_PFD=$(getprop ro.miui.ui.version.name 2>/dev/null)
+if [ -n "$HYPEROS_VER_PFD" ] || [ -n "$MIUI_VER_PFD" ]; then
+  log "HyperOS/MIUI detected — performing extended font cache cleanup"
+
+  # 1. FontManagerService runtime config (forces re-read of fonts.xml on boot)
+  if [ -d "/data/fonts/config" ]; then
+    rm -rf /data/fonts/config/* 2>/dev/null
+    log "Cleaned /data/fonts/config/"
+  fi
+
+  # 2. Theme Manager app cache (prevents stale emoji from Themes app)
+  theme_mgr_cleaned=0
+  for tmgr_dir in /data/data/com.android.thememanager/cache \
+                  /data/data/com.android.thememanager/code_cache \
+                  /data/user/*/com.android.thememanager/cache \
+                  /data/user/*/com.android.thememanager/code_cache; do
+    if [ -d "$tmgr_dir" ]; then
+      rm -rf "$tmgr_dir"/* 2>/dev/null
+      theme_mgr_cleaned=$((theme_mgr_cleaned + 1))
+    fi
+  done
+  [ "$theme_mgr_cleaned" -gt 0 ] && log "Cleaned $theme_mgr_cleaned Theme Manager cache dir(s)"
+
+  # 3. HyperOS theme default directory (can contain cached emoji)
+  if [ -d "/data/system/theme/default" ]; then
+    rm -rf /data/system/theme/default/*emoji* 2>/dev/null
+    rm -rf /data/system/theme/default/*Emoji* 2>/dev/null
+    log "Cleaned /data/system/theme/default/ emoji caches"
+  fi
+
+  # 4. APEX font module caches (Android 14+ Mainline font delivery)
+  for apex_dir in /data/misc/apexdata/com.android.i18n; do
+    if [ -d "$apex_dir" ]; then
+      apex_emoji=$(find "$apex_dir" -iname "*emoji*" 2>/dev/null | wc -l)
+      if [ "$apex_emoji" -gt 0 ]; then
+        find "$apex_dir" -iname "*emoji*" -delete 2>/dev/null
+        log "Cleaned $apex_emoji APEX emoji font(s) from $apex_dir"
+      fi
+    fi
+  done
+fi
+
 log "Sound_And_Emoji_IOS post-fs-data stage completed."
 log "================================================"

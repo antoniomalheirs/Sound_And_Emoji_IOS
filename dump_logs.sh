@@ -125,6 +125,64 @@ fi
     fi
   done
   echo ""
+  echo "─── [5b. HYPEROS / CANOE COMPATIBILITY STATUS] ─────────────────────────────"
+  echo "MIUI Version    : $(getprop ro.miui.ui.version.name 2>/dev/null || echo 'N/A')"
+  echo "HyperOS Version : $(getprop ro.mi.os.version.name 2>/dev/null || echo 'N/A')"
+  echo "Verified Boot   : $(getprop ro.boot.verifiedbootstate 2>/dev/null || echo 'unknown')"
+  echo "Flash Locked    : $(getprop ro.boot.flash.locked 2>/dev/null || echo 'unknown')"
+
+  # MiFontOverlay check
+  mifont_status="NOT FOUND (⚠ emojis may not work on HyperOS)"
+  if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
+    mifont_status="INSTALLED & ACTIVE ✅"
+  else
+    for _mfd in /data/adb/modules/*/; do
+      if [ -f "${_mfd}module.prop" ] && [ ! -f "${_mfd}disable" ]; then
+        if grep -qi "MiFontOverlay" "${_mfd}module.prop" 2>/dev/null; then
+          _mfn=$(grep "^name=" "${_mfd}module.prop" 2>/dev/null | cut -d= -f2)
+          mifont_status="ACTIVE via $_mfn ✅"
+          break
+        fi
+      fi
+    done
+  fi
+  echo "MiFontOverlay   : $mifont_status"
+
+  # gbl_root_canoe check
+  canoe_status="NOT DETECTED"
+  [ -e "/dev/block/by-name/efisp" ] && canoe_status="DETECTED (efisp partition)"
+  [ -d "/data/adb/modules/gbl_root_canoe" ] && canoe_status="DETECTED (module installed)"
+  _vb=$(getprop ro.boot.verifiedbootstate 2>/dev/null)
+  if [ "$_vb" = "green" ] && [ "$ROOT_MGR" != "Unknown" ]; then
+    canoe_status="${canoe_status} + green boot with root (possible fake lock)"
+  fi
+  echo "gbl_root_canoe  : $canoe_status"
+
+  # OverlayFS kernel support
+  if grep -q "overlay" /proc/filesystems 2>/dev/null; then
+    echo "Kernel OverlayFS: SUPPORTED ✅"
+  else
+    echo "Kernel OverlayFS: NOT SUPPORTED ❌ (CONFIG_OVERLAY_FS missing)"
+  fi
+
+  # fonts_customization.xml MIUI emoji ref check
+  for _fcx in /product/etc/fonts_customization.xml /system/product/etc/fonts_customization.xml; do
+    if [ -f "$_fcx" ]; then
+      _miui_refs=$(grep -c "MiuiColorEmoji\|MiuiEmoji" "$_fcx" 2>/dev/null || echo "0")
+      if [ "$_miui_refs" -gt 0 ]; then
+        echo "fonts_custom.xml: ⚠ $_fcx has $_miui_refs MIUI emoji refs (overlay may not be active)"
+      else
+        echo "fonts_custom.xml: ✅ $_fcx — no MIUI emoji refs (OK)"
+      fi
+    fi
+  done
+
+  # /data/fonts/config status
+  if [ -d "/data/fonts/config" ]; then
+    _dfc=$(ls -1A /data/fonts/config/ 2>/dev/null | wc -l)
+    echo "/data/fonts/cfg : $_dfc files"
+  fi
+  echo ""
   echo "─── [6. STAGE LOG: INSTALLATION (install.log)] ───────────────────────────"
   [ -f "$MODDIR/install.log" ] && cat "$MODDIR/install.log" 2>/dev/null || echo "install.log not found."
   echo ""

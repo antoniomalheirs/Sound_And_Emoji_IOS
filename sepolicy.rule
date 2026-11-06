@@ -30,3 +30,19 @@ allow isolated_app system_file:file { read open getattr map };
 # Allow system_server to read/write app_data_file for emoji font operations
 allow system_server app_data_file:file { read write open getattr setattr };
 allow system_server app_data_file:dir { search read open getattr };
+
+# === HyperOS / MIUI Specific SEPolicy (additive — safe on all devices) ===
+# These rules are silently ignored on devices where the types don't exist.
+
+# Allow system_server and FontManagerService to read font files from product overlay
+allow system_server product_file:file { read open getattr map };
+allow system_server product_file:dir { search read open getattr };
+
+# Allow Zygote-spawned processes to read custom fonts from module overlay
+allow zygote system_file:file { read open getattr map };
+
+# Allow platform and privileged apps to access product partition font overlays
+allow platform_app product_file:file { read open getattr map };
+allow platform_app product_file:dir { search read open getattr };
+allow priv_app product_file:file { read open getattr map };
+allow priv_app product_file:dir { search read open getattr };
