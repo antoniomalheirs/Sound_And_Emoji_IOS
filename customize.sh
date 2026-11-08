@@ -1170,6 +1170,11 @@ for gboard_dir in /data/data/com.google.android.inputmethod.latin \
     rm -rf "$gboard_dir/app_textures"* 2>/dev/null
     rm -rf "$gboard_dir/files/expression"* 2>/dev/null
     rm -rf "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null
+    # EmojiCompat / emoji2 downloaded font cache (Issue #12 fix)
+    rm -rf "$gboard_dir/files/fonts"/* 2>/dev/null
+    rm -rf "$gboard_dir/no_backup"/*emoji* 2>/dev/null
+    rm -rf "$gboard_dir/no_backup"/*Emoji* 2>/dev/null
+    rm -rf "$gboard_dir/files/emoji_metadata"* 2>/dev/null
   fi
 done
 am force-stop com.google.android.inputmethod.latin 2>/dev/null
@@ -1186,6 +1191,37 @@ for msg_dir in /data/data/com.google.android.apps.messaging \
 done
 am force-stop com.google.android.apps.messaging 2>/dev/null
 ui_print "[✓] Cache do Google Messages limpo"
+
+# ── Clean EmojiCompat / emoji2 font caches across ALL installed apps (Issue #12) ──
+# Apps like Snapchat, Messages, etc. use EmojiCompat which downloads stock Google
+# emoji fonts from GMS into files/fonts/. Clearing these forces apps to use our
+# iOS emoji font from /system/fonts/ on next launch.
+ui_print "[*] Limpando caches EmojiCompat de apps instalados..."
+COMPAT_CLEANED=0
+for fonts_dir in /data/data/*/files/fonts /data/user/*/*/files/fonts; do
+  if [ -d "$fonts_dir" ]; then
+    app_dir="${fonts_dir%/files/fonts}"
+    pkg_name="${app_dir##*/}"
+    case "$pkg_name" in
+      com.google.android.gms) continue ;;
+      com.google.android.inputmethod.latin) continue ;;
+    esac
+    fcount=$(ls -1A "$fonts_dir" 2>/dev/null | wc -l)
+    if [ "$fcount" -gt 0 ]; then
+      rm -rf "$fonts_dir"/* 2>/dev/null
+      COMPAT_CLEANED=$((COMPAT_CLEANED + 1))
+    fi
+  fi
+done
+for nobackup_dir in /data/data/*/no_backup /data/user/*/*/no_backup; do
+  if [ -d "$nobackup_dir" ]; then
+    rm -rf "$nobackup_dir"/*emoji* 2>/dev/null
+    rm -rf "$nobackup_dir"/*Emoji* 2>/dev/null
+  fi
+done
+# Force-stop apps known to cache EmojiCompat fonts
+am force-stop com.snapchat.android 2>/dev/null
+ui_print "[✓] EmojiCompat limpo em $COMPAT_CLEANED app(s)"
 ui_print " "
 
 

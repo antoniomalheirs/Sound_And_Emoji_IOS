@@ -483,7 +483,8 @@ for gboard_dir in /data/data/com.google.android.inputmethod.latin /data/user/0/c
     bundled_db=$(ls "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null | wc -l)
     emoji_files=$(ls "$gboard_dir/files/emoji"* 2>/dev/null | wc -l)
     speech_models=$(ls "$gboard_dir/files/superpacks/speech"* 2>/dev/null | wc -l)
-    log "DIAG: Gboard ($gboard_dir): emoji_db=$bundled_db, emoji_files=$emoji_files, speech_models=$speech_models"
+    compat_fonts=$(ls "$gboard_dir/files/fonts/"* 2>/dev/null | wc -l)
+    log "DIAG: Gboard ($gboard_dir): emoji_db=$bundled_db, emoji_files=$emoji_files, compat_fonts=$compat_fonts, speech_models=$speech_models"
   fi
 done
 
@@ -651,7 +652,15 @@ clear_gboard_cache() {
       rm -rf "$gboard_dir/app_textures"* 2>/dev/null
       rm -rf "$gboard_dir/files/expression"* 2>/dev/null
       rm -rf "$gboard_dir/databases/bundled_emoji_provider"* 2>/dev/null
-      log "INFO: Cleaned Gboard cache in $gboard_dir"
+      # EmojiCompat / emoji2 downloaded font cache (Issue #12 fix)
+      # Gboard downloads a stock NotoColorEmoji via GMS EmojiCompat into files/fonts/.
+      # If this cache persists, Gboard's emoji keyboard panel renders Google stock emojis
+      # instead of our iOS font from /system/fonts/.
+      rm -rf "$gboard_dir/files/fonts"/* 2>/dev/null
+      rm -rf "$gboard_dir/no_backup"/*emoji* 2>/dev/null
+      rm -rf "$gboard_dir/no_backup"/*Emoji* 2>/dev/null
+      rm -rf "$gboard_dir/files/emoji_metadata"* 2>/dev/null
+      log "INFO: Cleaned Gboard cache in $gboard_dir (including EmojiCompat fonts)"
     fi
   done
   am force-stop com.google.android.inputmethod.latin 2>/dev/null
@@ -792,6 +801,59 @@ replace_global_emoji
 # Áudios montados nas partições de sistema (/system, /product, /vendor) são
 # indexados diretamente pelo MediaProvider nativo do Android em INTERNAL_CONTENT_URI.
 log "INFO: Audio mounted in system paths - indexed natively by Android MediaProvider."
+
+# ─── EmojiCompat / emoji2 Cache Cleanup (ALL apps) ────────────────────
+# Modern Android apps (Snapchat, Gboard, Messages, etc.) use the EmojiCompat /
+# androidx.emoji2 library which downloads stock Google emoji fonts from GMS into
+# each app's files/fonts/ directory. If these caches persist, apps render Google
+# stock emojis from the cached font instead of our iOS font from /system/fonts/.
+# This cleanup forces apps to re-query the system font on next launch.
+# (Issue #12 — Snapchat + Gboard emoji panel not showing iOS emojis)
+clean_emojicompat_caches() {
+  log "INFO: Cleaning EmojiCompat/emoji2 font caches across all apps..."
+  local cleaned=0
+
+  # 1. Clean files/fonts/ in ALL app directories (EmojiCompat font cache)
+  for fonts_dir in /data/data/*/files/fonts /data/user/*/*/files/fonts; do
+    if [ -d "$fonts_dir" ]; then
+      local app_dir="${fonts_dir%/files/fonts}"
+      local pkg_name="${app_dir##*/}"
+      # Skip GMS itself — its fonts dir serves the provider, not app rendering
+      case "$pkg_name" in
+        com.google.android.gms) continue ;;
+      esac
+      local fcount=$(ls -1A "$fonts_dir" 2>/dev/null | wc -l)
+      if [ "$fcount" -gt 0 ]; then
+        rm -rf "$fonts_dir"/* 2>/dev/null
+        cleaned=$((cleaned + 1))
+        log "INFO: Cleaned EmojiCompat font cache in $pkg_name ($fcount files)"
+      fi
+    fi
+  done
+
+  # 2. Clean no_backup emoji metadata in ALL app directories
+  for nobackup_dir in /data/data/*/no_backup /data/user/*/*/no_backup; do
+    if [ -d "$nobackup_dir" ]; then
+      local emoji_nb=$(ls "$nobackup_dir" 2>/dev/null | grep -i emoji | wc -l)
+      if [ "$emoji_nb" -gt 0 ]; then
+        rm -rf "$nobackup_dir"/*emoji* 2>/dev/null
+        rm -rf "$nobackup_dir"/*Emoji* 2>/dev/null
+      fi
+    fi
+  done
+
+  # 3. Force-stop known apps with EmojiCompat issues to reload system font
+  for compat_pkg in com.snapchat.android com.google.android.apps.messaging; do
+    if [ -d "/data/data/$compat_pkg" ]; then
+      am force-stop "$compat_pkg" 2>/dev/null
+      log "INFO: Force-stopped $compat_pkg to reload emoji font"
+    fi
+  done
+
+  log "INFO: EmojiCompat cleanup complete. Cleaned $cleaned app(s)."
+}
+
+clean_emojicompat_caches
 
 # ─── Universal Emoji Watcher Daemon ───────────────────────────────────
 # Monitors apps with app_ras_blobs/ for emoji font changes without draining battery.
