@@ -74,6 +74,11 @@ for gboard_dir in /data/data/com.google.android.inputmethod.latin \
     rm -rf "$gboard_dir/files/superpacks/emoji"* 2>/dev/null
     rm -rf "$gboard_dir/app_textures"* 2>/dev/null
     rm -rf "$gboard_dir/files/expression"* 2>/dev/null
+    # EmojiCompat downloaded font & metadata cleanup (early boot defense)
+    rm -rf "$gboard_dir/files/fonts"/* 2>/dev/null
+    rm -rf "$gboard_dir/no_backup"/*emoji* 2>/dev/null
+    rm -rf "$gboard_dir/no_backup"/*Emoji* 2>/dev/null
+    rm -rf "$gboard_dir/files/emoji_metadata"* 2>/dev/null
     gb_db_cleaned=$((gb_db_cleaned + 1))
   fi
 done

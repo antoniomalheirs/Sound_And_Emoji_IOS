@@ -46,10 +46,21 @@ fi
   echo "Root Manager      : $ROOT_MGR"
 
   meta_name="None detected"
-  for mdir in /data/adb/modules/meta-overlayfs /data/adb/modules/meta-hybrid_mount /data/adb/modules/NanoMount /data/adb/modules/Mountify /data/adb/modules/metamount; do
-    if [ -d "$mdir" ] && [ ! -f "$mdir/disable" ]; then
-      meta_name="$(basename "$mdir") v$(grep '^version=' "$mdir/module.prop" 2>/dev/null | cut -d= -f2)"
-      break
+  for mdir in /data/adb/modules/*/; do
+    if [ -f "${mdir}module.prop" ] && [ ! -f "${mdir}disable" ]; then
+      is_meta=false
+      case "$(basename "$mdir")" in
+        meta-*|*metamount*|*NanoMount*|*Mountify*|*overlayfs*) is_meta=true ;;
+      esac
+      if grep -q "metamodule=1" "${mdir}module.prop" 2>/dev/null; then
+        is_meta=true
+      fi
+      if [ "$is_meta" = true ]; then
+        m_pname=$(grep "^name=" "${mdir}module.prop" 2>/dev/null | cut -d= -f2)
+        m_ver=$(grep "^version=" "${mdir}module.prop" 2>/dev/null | cut -d= -f2)
+        meta_name="${m_pname:-$(basename "$mdir")} v${m_ver}"
+        break
+      fi
     fi
   done
   echo "Active Metamodule : $meta_name"
@@ -131,20 +142,26 @@ fi
   echo "Verified Boot   : $(getprop ro.boot.verifiedbootstate 2>/dev/null || echo 'unknown')"
   echo "Flash Locked    : $(getprop ro.boot.flash.locked 2>/dev/null || echo 'unknown')"
 
-  # MiFontOverlay check
-  mifont_status="NOT FOUND (⚠ emojis may not work on HyperOS)"
-  if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
-    mifont_status="INSTALLED & ACTIVE ✅"
-  else
-    for _mfd in /data/adb/modules/*/; do
-      if [ -f "${_mfd}module.prop" ] && [ ! -f "${_mfd}disable" ]; then
-        if grep -qi "MiFontOverlay" "${_mfd}module.prop" 2>/dev/null; then
-          _mfn=$(grep "^name=" "${_mfd}module.prop" 2>/dev/null | cut -d= -f2)
-          mifont_status="ACTIVE via $_mfn ✅"
-          break
+  # MiFontOverlay check (HyperOS/MIUI only)
+  _miui=$(getprop ro.miui.ui.version.name 2>/dev/null)
+  _hyperos=$(getprop ro.mi.os.version.name 2>/dev/null)
+  if [ -n "$_miui" ] || [ -n "$_hyperos" ]; then
+    mifont_status="NOT FOUND (⚠ emojis may not work on HyperOS without DisableMiFontOverlay)"
+    if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
+      mifont_status="INSTALLED & ACTIVE ✅"
+    else
+      for _mfd in /data/adb/modules/*/; do
+        if [ -f "${_mfd}module.prop" ] && [ ! -f "${_mfd}disable" ]; then
+          if grep -qi "MiFontOverlay" "${_mfd}module.prop" 2>/dev/null; then
+            _mfn=$(grep "^name=" "${_mfd}module.prop" 2>/dev/null | cut -d= -f2)
+            mifont_status="ACTIVE via $_mfn ✅"
+            break
+          fi
         fi
-      fi
-    done
+      done
+    fi
+  else
+    mifont_status="N/A (AOSP / Not HyperOS — not required) ✅"
   fi
   echo "MiFontOverlay   : $mifont_status"
 

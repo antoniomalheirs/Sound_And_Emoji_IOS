@@ -253,6 +253,16 @@ AOSP_VERSION=$(getprop ro.rom.version 2>/dev/null)
 if [ -n "$AXION_VER" ] || [ -n "$LINEAGE_VER" ] || [ -n "$CRDROID_VER" ] || [ -n "$EVO_VER" ] || [ -n "$AOSP_VERSION" ] || \
    echo "$BUILD_DISPLAY" | grep -qiE "axion|lineage|crdroid|evolution|pixelos|aosp|derp|havoc|resurrection"; then
   IS_CUSTOM_AOSP=true
+# Deterministic hardware vs OS skin detection:
+# If hardware is Xiaomi/POCO/Redmi but NO Xiaomi framework props or SystemUI exist, it is an AOSP ROM
+elif [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "poco" ] || [ "$BRAND" = "redmi" ]; then
+  if [ -z "$MIUI_VER" ] && [ -z "$HYPEROS_VER" ] && [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+    IS_CUSTOM_AOSP=true
+  fi
+elif [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
+  if [ -z "$ONEUI_VER" ] && ! pm list packages 2>/dev/null | grep -q "com.sec.android.app"; then
+    IS_CUSTOM_AOSP=true
+  fi
 fi
 
 # Samsung detection — only if genuinely OneUI and NOT an AOSP custom ROM
@@ -860,21 +870,33 @@ if [ "$IS_MODULE_UPDATE" = true ]; then
   ui_print "[*] Atualização detectada — detecção baseada em propriedades da ROM"
 
   # Samsung — use robust detection (handles custom ROMs like LemonUI)
-  if [ "$IS_SAMSUNG" = true ] || [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
-    ui_print "[*] ROM detectada: Samsung/OneUI (ou baseada)"
+  if [ "$IS_SAMSUNG" = true ]; then
+    ui_print "[*] ROM detectada: Samsung/OneUI"
+    link_emoji "SamsungColorEmoji.ttf"
+  elif [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
+    ui_print "[*] Hardware Samsung detectado (mapeando fontes OEM para compatibilidade)"
     link_emoji "SamsungColorEmoji.ttf"
   fi
 
   # Xiaomi / MIUI / HyperOS
-  if [ "$IS_XIAOMI" = true ] || [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "redmi" ] || [ "$BRAND" = "poco" ]; then
+  if [ "$IS_XIAOMI" = true ]; then
     ui_print "[*] ROM detectada: Xiaomi/MIUI/HyperOS"
+    link_emoji "MiuiColorEmoji.ttf"
+    link_emoji "MiuiEmoji.ttf"
+  elif [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "redmi" ] || [ "$BRAND" = "poco" ]; then
+    ui_print "[*] Hardware Xiaomi/Redmi/POCO detectado (mapeando fontes OEM para compatibilidade)"
     link_emoji "MiuiColorEmoji.ttf"
     link_emoji "MiuiEmoji.ttf"
   fi
 
   # OPPO/OnePlus/Realme
-  if [ "$IS_OPPO" = true ] || [ "$MANUFACTURER" = "oppo" ] || [ "$MANUFACTURER" = "oneplus" ] || [ "$MANUFACTURER" = "realme" ] || [ "$BRAND" = "oppo" ] || [ "$BRAND" = "oneplus" ] || [ "$BRAND" = "realme" ]; then
-    ui_print "[*] ROM detectada: OPPO/OnePlus/Realme"
+  if [ "$IS_OPPO" = true ]; then
+    ui_print "[*] ROM detectada: OPPO/OnePlus/Realme (ColorOS/OxygenOS)"
+    link_emoji "OPFontEmoji.ttf"
+    link_emoji "OnePlusColorEmoji.ttf"
+    link_emoji "OnePlusEmoji.ttf"
+  elif [ "$MANUFACTURER" = "oppo" ] || [ "$MANUFACTURER" = "oneplus" ] || [ "$MANUFACTURER" = "realme" ] || [ "$BRAND" = "oppo" ] || [ "$BRAND" = "oneplus" ] || [ "$BRAND" = "realme" ]; then
+    ui_print "[*] Hardware OPPO/OnePlus/Realme detectado (mapeando fontes OEM para compatibilidade)"
     link_emoji "OPFontEmoji.ttf"
     link_emoji "OnePlusColorEmoji.ttf"
     link_emoji "OnePlusEmoji.ttf"

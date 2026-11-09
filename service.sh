@@ -274,19 +274,27 @@ done
 
 # ── Section 3: Metamodule detection ──
 log "DIAG: ── 3. Metamodule Detection ──"
-for meta_dir in /data/adb/modules/meta-overlayfs \
-                /data/adb/modules/meta-hybrid_mount \
-                /data/adb/modules/NanoMount \
-                /data/adb/modules/Mountify \
-                /data/adb/modules/metamount; do
-  if [ -d "$meta_dir" ]; then
-    meta_ver=""
-    [ -f "$meta_dir/module.prop" ] && meta_ver=$(grep "^version=" "$meta_dir/module.prop" 2>/dev/null | cut -d= -f2)
-    meta_disabled=""
-    [ -f "$meta_dir/disable" ] && meta_disabled=" [DISABLED]"
-    log "DIAG: METAMODULE FOUND: $(basename "$meta_dir") v${meta_ver}${meta_disabled}"
+meta_found_diag=false
+for meta_dir in /data/adb/modules/*/; do
+  if [ -f "${meta_dir}module.prop" ]; then
+    is_meta=false
+    case "$(basename "$meta_dir")" in
+      meta-*|*metamount*|*NanoMount*|*Mountify*|*overlayfs*) is_meta=true ;;
+    esac
+    if grep -q "metamodule=1" "${meta_dir}module.prop" 2>/dev/null; then
+      is_meta=true
+    fi
+    if [ "$is_meta" = true ]; then
+      meta_ver=$(grep "^version=" "${meta_dir}module.prop" 2>/dev/null | cut -d= -f2)
+      meta_pname=$(grep "^name=" "${meta_dir}module.prop" 2>/dev/null | cut -d= -f2)
+      meta_disabled=""
+      [ -f "${meta_dir}disable" ] && meta_disabled=" [DISABLED]"
+      log "DIAG: METAMODULE FOUND: $(basename "$meta_dir") (${meta_pname:-Metamodule} v${meta_ver})${meta_disabled}"
+      meta_found_diag=true
+    fi
   fi
 done
+[ "$meta_found_diag" = false ] && log "DIAG: Metamodule: None detected"
 
 # KernelSU version
 ksu_ver=$(getprop ro.kernelsu.version 2>/dev/null)
@@ -413,22 +421,26 @@ for theme_path in /data/system/theme/fonts /data/system/theme_magic/fonts; do
   fi
 done
 
-# MiFontOverlay bypass detection
-mifont_active="NOT FOUND"
-if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
-  mifont_active="DISABLED (DisableMiFontOverlay installed)"
-else
-  for mfd in /data/adb/modules/*/; do
-    if [ -f "${mfd}module.prop" ] && [ ! -f "${mfd}disable" ]; then
-      if grep -qi "MiFontOverlay" "${mfd}module.prop" 2>/dev/null; then
-        mf_name=$(grep "^name=" "${mfd}module.prop" 2>/dev/null | cut -d= -f2)
-        mifont_active="DISABLED ($mf_name)"
-        break
+# MiFontOverlay bypass detection (HyperOS/MIUI only)
+if [ -n "$miui_ver" ] || [ -n "$hyperos_ver" ]; then
+  mifont_active="NOT FOUND (⚠ emojis may not work on HyperOS without DisableMiFontOverlay)"
+  if [ -d "/data/adb/modules/DisableMiFontOverlay" ] && [ ! -f "/data/adb/modules/DisableMiFontOverlay/disable" ]; then
+    mifont_active="DISABLED (DisableMiFontOverlay installed)"
+  else
+    for mfd in /data/adb/modules/*/; do
+      if [ -f "${mfd}module.prop" ] && [ ! -f "${mfd}disable" ]; then
+        if grep -qi "MiFontOverlay" "${mfd}module.prop" 2>/dev/null; then
+          mf_name=$(grep "^name=" "${mfd}module.prop" 2>/dev/null | cut -d= -f2)
+          mifont_active="DISABLED ($mf_name)"
+          break
+        fi
       fi
-    fi
-  done
+    done
+  fi
+  log "DIAG: MiFontOverlay status: $mifont_active"
+else
+  log "DIAG: MiFontOverlay status: N/A (AOSP / Not HyperOS — not required)"
 fi
-log "DIAG: MiFontOverlay status: $mifont_active"
 
 # fonts_customization.xml status
 for fcxml in /product/etc/fonts_customization.xml /system/product/etc/fonts_customization.xml; do
@@ -1024,10 +1036,21 @@ generate_diagnostic_report() {
     echo "Root Manager      : $ROOT_MGR"
 
     local meta_name="None detected"
-    for mdir in /data/adb/modules/meta-overlayfs /data/adb/modules/meta-hybrid_mount /data/adb/modules/NanoMount /data/adb/modules/Mountify /data/adb/modules/metamount; do
-      if [ -d "$mdir" ] && [ ! -f "$mdir/disable" ]; then
-        meta_name="$(basename "$mdir") v$(grep '^version=' "$mdir/module.prop" 2>/dev/null | cut -d= -f2)"
-        break
+    for mdir in /data/adb/modules/*/; do
+      if [ -f "${mdir}module.prop" ] && [ ! -f "${mdir}disable" ]; then
+        local is_meta=false
+        case "$(basename "$mdir")" in
+          meta-*|*metamount*|*NanoMount*|*Mountify*|*overlayfs*) is_meta=true ;;
+        esac
+        if grep -q "metamodule=1" "${mdir}module.prop" 2>/dev/null; then
+          is_meta=true
+        fi
+        if [ "$is_meta" = true ]; then
+          local m_pname=$(grep "^name=" "${mdir}module.prop" 2>/dev/null | cut -d= -f2)
+          local m_ver=$(grep "^version=" "${mdir}module.prop" 2>/dev/null | cut -d= -f2)
+          meta_name="${m_pname:-$(basename "$mdir")} v${m_ver}"
+          break
+        fi
       fi
     done
     echo "Active Metamodule : $meta_name"

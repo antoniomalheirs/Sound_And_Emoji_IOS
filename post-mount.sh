@@ -22,19 +22,14 @@ log "================================================"
 log "Sound_And_Emoji_IOS post-mount stage started"
 log "================================================"
 
-# Refresh SELinux contexts for overlay files
-if [ -d "$MODDIR/system" ]; then
-  find "$MODDIR/system" -exec chcon u:object_r:system_file:s0 {} \; 2>/dev/null
-  log "Refreshed SELinux contexts on $MODDIR/system"
-fi
-if [ -d "$MODDIR/product" ]; then
-  find "$MODDIR/product" -exec chcon u:object_r:system_file:s0 {} \; 2>/dev/null
-  log "Refreshed SELinux contexts on $MODDIR/product"
-fi
-if [ -d "$MODDIR/system_ext" ]; then
-  find "$MODDIR/system_ext" -exec chcon u:object_r:system_file:s0 {} \; 2>/dev/null
-  log "Refreshed SELinux contexts on $MODDIR/system_ext"
-fi
+# Refresh SELinux contexts for overlay files (fast recursive chcon)
+for part in system product system_ext; do
+  if [ -d "$MODDIR/$part" ]; then
+    chcon -R u:object_r:system_file:s0 "$MODDIR/$part" 2>/dev/null || \
+      find "$MODDIR/$part" -exec chcon u:object_r:system_file:s0 {} + 2>/dev/null
+    log "Refreshed SELinux contexts on $MODDIR/$part"
+  fi
+done
 
 log "Sound_And_Emoji_IOS post-mount stage completed."
 log "================================================"
