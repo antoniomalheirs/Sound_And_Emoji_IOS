@@ -81,41 +81,37 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 
 ## 📦 What's Included
 
-### 🔊 Sounds (43 files)
+### 🔊 Sounds (37 base files + dynamic OEM aliases)
 
 <details>
-<summary><b>UI Sounds (30 files)</b></summary>
+<summary><b>UI Sounds (24 base files + aliases)</b></summary>
 
-| Sound | File |
-| :--- | :--- |
-| Lock Screen | `Lock.ogg` |
-| Unlock Screen | `Unlock.ogg` |
-| Keyboard Standard | `KeypressStandard.ogg` |
-| Keyboard Spacebar | `KeypressSpacebar.ogg` |
-| Keyboard Delete | `KeypressDelete.ogg` |
-| Keyboard Return | `KeypressReturn.ogg` |
-| Keyboard Invalid | `KeypressInvalid.ogg` |
-| Camera Click | `camera_click.ogg`, `CameraClick.ogg` |
-| Camera Focus | `camera_focus.ogg`, `CameraFocus.ogg` |
-| Screenshot | `screenshot.ogg` |
-| Video Record Start | `VideoRecord.ogg` |
-| Video Record Stop | `VideoStop.ogg` |
-| Charging Started | `ChargingStarted.ogg` |
-| Charging Stopped | `ChargingStopped.ogg` |
-| Wireless Charging | `WirelessChargingStarted.ogg` |
-| Low Battery | `LowBattery.ogg` |
-| NFC Success | `NFCSuccess.ogg` |
-| NFC Failure | `NFCFailure.ogg` |
-| NFC Transfer Complete | `NFCTransferComplete.ogg` |
-| NFC Transfer Initiated | `NFCTransferInitiated.ogg` |
-| NFC Initiated | `NFCInitiated.ogg` |
-| Smart Lock (Trusted) | `Trusted.ogg` |
-| Dock | `Dock.ogg` |
-| Undock | `Undock.ogg` |
-| Volume Incremental | `VolumeIncremental.ogg` |
-| Media Volume | `Media_Volume.ogg` |
-| Effect Tick | `Effect_Tick.ogg` |
-| In-Call Notification | `InCallNotification.ogg` |
+| Sound | Base File | Common Dynamic Aliases & OEM Links |
+| :--- | :--- | :--- |
+| Lock Screen | `Lock.ogg` | `lock.ogg` |
+| Unlock Screen | `Unlock.ogg` | `unlock.ogg` |
+| Keyboard Standard | `KeypressStandard.ogg` | `keypress_standard.ogg` |
+| Keyboard Spacebar | `KeypressSpacebar.ogg` | `keypress_spacebar.ogg` |
+| Keyboard Delete | `KeypressDelete.ogg` | `keypress_delete.ogg` |
+| Keyboard Return | `KeypressReturn.ogg` | `keypress_return.ogg` |
+| Keyboard Invalid | `KeypressInvalid.ogg` | `keypress_invalid.ogg` |
+| Camera Click | `camera_click.ogg` | `CameraClick.ogg`, `camera_shutter.ogg` |
+| Camera Focus | `camera_focus.ogg` | `CameraFocus.ogg` |
+| Screenshot | `screenshot.ogg` | `Screenshot.ogg` |
+| Video Record Start | `VideoRecord.ogg` | `video_record.ogg` |
+| Video Record Stop | `VideoStop.ogg` | `video_stop.ogg` |
+| Charging Started | `ChargingStarted.ogg` | `WirelessChargingStarted.ogg` |
+| Charging Stopped | `ChargingStopped.ogg` | `charging_stopped.ogg` |
+| Low Battery | `LowBattery.ogg` | `low_battery.ogg` |
+| NFC Success | `NFCSuccess.ogg` | `nfc_success.ogg` |
+| NFC Failure | `NFCFailure.ogg` | `nfc_failure.ogg` |
+| NFC Transfer Complete | `NFCTransferComplete.ogg` | `nfc_transfer_complete.ogg` |
+| NFC Transfer Initiated | `NFCTransferInitiated.ogg` | `nfc_transfer_initiated.ogg` |
+| NFC Initiated | `NFCInitiated.ogg` | `nfc_initiated.ogg` |
+| Smart Lock (Trusted) | `Trusted.ogg` | `trusted.ogg` |
+| Volume Incremental | `VolumeIncremental.ogg` | `volume_incremental.ogg`, `Media_Volume.ogg` |
+| Effect Tick | `Effect_Tick.ogg` | `effect_tick.ogg`, `Dock.ogg`, `Undock.ogg` |
+| In-Call Notification | `InCallNotification.ogg` | `in_call_notification.ogg` |
 
 </details>
 
@@ -129,8 +125,8 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 | New Mail | `IOSNewMail.ogg` |
 | Reminder Alert | `IOSReminderAlert.ogg` |
 | Sent Message | `IOSSentMessage.ogg` |
-| iOS Notification 0 | `Ios Notification 0.ogg` |
-| iOS Notification 1 | `Ios Notification 1.ogg` |
+| iOS Notification 0 | `IOSNotification0.ogg` |
+| iOS Notification 1 | `IOSNotification1.ogg` |
 
 </details>
 
@@ -156,18 +152,18 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 
 </details>
 
-### 😀 Emoji Fonts (2 files)
+### 😀 Emoji Fonts
 
 | Font | Size | Purpose |
 | :--- | :--- | :--- |
-| `NotoColorEmoji.ttf` | ~33 MB | System-wide emoji replacement (AOSP/Pixel) with authentic Apple flags & full UVS skin tones |
-| `FacebookEmoji.ttf` | ~30 MB | Meta apps emoji replacement (FB, IG, Messenger) |
+| `NotoColorEmoji.ttf` | ~33.6 MB | System-wide iOS emoji replacement with authentic Apple flags, Format 14 CMAP (UVS) & OEM mappings |
 
 > [!NOTE]
 > **Advanced OpenType & Apple Styling Highlights:**
 > - **Authentic iOS Flags:** All 270 flag emojis (including country flags, 10 outlying territories, and 11 special flags) use genuine Apple bitmaps centered at optical coordinates `(4, 0)` with zero Google assets remaining.
 > - **OpenType CMAP Format 14 (UVS):** Features 371 default Unicode Variation Sequence records for `0xFE0F`, fully conforming to Android Minikin's `Paint.hasGlyph()` validation. Restores the default neutral yellow skin tone in Gboard's variant popup across all single and multi-person emojis.
 > - **BMP Emoji Restorations:** Complete character mapping for Basic Multilingual Plane emojis (❤️ `U+2764`, ☠️ `U+2620`, ⁉️ `U+2049`) guaranteeing visibility in both keyboard layouts and search.
+> - **Dynamic Meta Deployment:** The module dynamically deploys `NotoColorEmoji.ttf` to Meta apps (Facebook, Messenger, etc.) directly into `app_ras_blobs/FacebookEmoji.ttf` at runtime (`chmod 644`), while Instagram safely utilizes the system font to maintain 100% Story reply stability.
 
 ### 🔤 SF Pro Display (16 font weights)
 
@@ -264,38 +260,33 @@ The module uses a sophisticated multi-stage boot pipeline to ensure everything w
 ```mermaid
 graph TD
     subgraph INSTALL["📥 Installation (customize.sh)"]
-        I1[Detect Root Environment] --> I2[Detect Android Version]
-        I2 --> I3{API ≥ 31?}
-        I3 -- Yes --> I4["/system/product/media/audio"]
-        I3 -- No --> I5["Mirror to /system/media/audio"]
-        I4 --> I6[Detect OEM Fonts]
-        I5 --> I6
-        I6 --> I7[Clear Gboard Cache]
-        I7 --> I8[Set SELinux Contexts]
-        I8 --> I9[Apply Permissions]
+        I1[Detect Root Environment] --> I2[4-Layer ROM Identification]
+        I2 --> I3[Dynamic Metamodule Discovery]
+        I3 --> I4[Mirror Audio Across Partitions]
+        I4 --> I5[Map OEM & Flag Fonts]
+        I5 --> I6[Clean Gboard & EmojiCompat Caches]
+        I6 --> I7[Apply SELinux Contexts & Permissions]
     end
 
     subgraph BOOT1["🔒 post-fs-data.sh (Pre-Mount)"]
-        B1["Nuke font caches:<br/>/data/fonts<br/>GMS fonts<br/>Gboard emoji<br/>Messenger fonts"]
+        B1["Nuke font caches & locks:<br/>/data/fonts/files (chattr +i)<br/>GMS & Messenger caches<br/>Gboard DB & EmojiCompat<br/>HyperOS theme caches"]
     end
 
-    subgraph BOOT2["📁 post-mount.sh (After OverlayFS)"]
-        B2[Replace ALL *emoji*.ttf in /data] --> B3[Lock Meta app emojis]
-        B3 --> B4[Block Messenger font downloads]
-        B4 --> B5[Clean GMS font caches]
+    subgraph BOOT2["📁 post-mount.sh (After Mount)"]
+        B2["Fast Recursive chcon -R<br/>(Refresh SELinux contexts on<br/>/system, /product, /system_ext)"]
     end
 
     subgraph BOOT3["⚙️ service.sh (Late Start)"]
-        B6[Wait for boot_completed] --> B7[Clear Gboard cache]
-        B7 --> B8["Force resetprop ro.config.*"]
-        B8 --> B9[Replace ALL emoji fonts globally]
-        B9 --> B10[Lock Meta emoji]
-        B10 --> B11[Disable GMS Font Provider]
-        B11 --> B12["Media Scanner (Magisk only)"]
+        B3[Wait for boot_completed] --> B4[Force resetprop & SettingsProvider]
+        B4 --> B5[Universal Meta Emoji Deployment]
+        B5 --> B6[Disable GMS FontsProvider]
+        B6 --> B7[Global EmojiCompat Sweep & Snapchat Reload]
+        B7 --> B8[Start Emoji Watcher Daemon]
+        B8 --> B9[Generate Diagnostic Bundle & Export]
     end
 
     subgraph BOOT4["✅ boot-completed.sh (KSU/APatch)"]
-        B13["Force resetprop ro.config.*"] --> B14[Media Scanner broadcast]
+        B10["Re-apply ro.config.* props"] --> B11[Media Scanner broadcast]
     end
 
     INSTALL --> BOOT1
@@ -314,10 +305,10 @@ graph TD
 
 | Stage | Timing | Purpose |
 | :--- | :--- | :--- |
-| `post-fs-data.sh` | Before module mount | Clean caches BEFORE system reads them |
-| `post-mount.sh` | After OverlayFS mount | Replace app emoji files while apps haven't started |
-| `service.sh` | Late start (boot completed) | Force properties, disable GMS, media scan |
-| `boot-completed.sh` | After `sys.boot_completed=1` (KSU/APatch) | Re-apply properties that system may have overwritten |
+| `post-fs-data.sh` | Before module mount | Clean caches & lock `/data/fonts/files` BEFORE system reads them |
+| `post-mount.sh` | After OverlayFS mount | Lightning-fast recursive SELinux context relabeling (`chcon -R`) in ~15ms |
+| `service.sh` | Late start (boot completed) | Force sound properties, deploy Meta emojis, disable GMS font provider, sweep EmojiCompat, start watcher, compile diagnostic bundle |
+| `boot-completed.sh` | After `sys.boot_completed=1` (KSU/APatch) | Re-apply sound properties that system may have overwritten and trigger media scanner |
 
 ---
 
@@ -347,15 +338,12 @@ Runs BEFORE the module is mounted. Has a strict 10-second timeout.
 - Clears Gboard emoji caches, databases, and early-boot EmojiCompat caches (`files/fonts/`, `no_backup/*emoji*`, `files/emoji_metadata*`)
 - Removes Messenger font download directories
 
-### `post-mount.sh` — Emoji Lock (KSU/APatch)
+### `post-mount.sh` — SELinux Context Enforcer (KSU/APatch)
 
-Runs AFTER OverlayFS/MagicMount has mounted module files.
+Runs AFTER module files are mounted (pre-boot stage).
 
-- **Lightning-Fast SELinux Relabeling:** Uses recursive `chcon -R` across module partitions, slashing pre-boot staging time from ~4000ms down to ~15ms
-- **Nuclear font replacement:** Finds ALL `*emoji*.ttf` files in `/data/data/` and `/data/user/0/` and replaces them with the iOS emoji font
-- **Meta app lock:** Creates/replaces `FacebookEmoji.ttf` in each Meta app's `app_ras_blobs/` directory with correct ownership and immutable flag
-- **Messenger block:** Sets `chmod 000` on Messenger's font download directory
-- **GMS cleanup:** Removes cached font files from Google Play Services
+- **Lightning-Fast SELinux Relabeling:** Uses fast recursive `chcon -R u:object_r:system_file:s0` across module partitions (`/system`, `/product`, `/system_ext`), slashing pre-boot staging time from ~4000ms down to ~15ms while keeping early boot 100% safe against timeout bootloops
+- **Rotated Stage Logging:** Logs execution status to `$MODDIR/post-mount.log` with automatic log rotation (>100KB rollover)
 
 ### `service.sh` — Late Start Service (Universal)
 
@@ -365,12 +353,20 @@ The main runtime script. Waits for `sys.boot_completed=1` before executing.
 - **OxygenOS / ColorOS Camera Protection:** Dynamically checks OEM properties (`ro.oplus.image.my_manifest`, `ro.product.manufacturer`, `ro.product.brand`) to skip camera sound `resetprop` on OPPO, OnePlus, and Realme devices, preventing native camera validation crashes while keeping all iOS UI sounds active
 - **Global emoji replacement:** Scans ALL app directories for emoji font files and replaces them
 - **Global EmojiCompat / emoji2 Cache Cleaner:** Scans all user apps (`/data/data` and `/data/user/`) for `androidx.emoji2` / `EmojiCompat` downloaded stock fonts in `files/fonts/`, forcing apps like Snapchat and Google Messages to render system iOS emojis
-- **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chmod 444`
+- **Universal Meta Emoji Deployment:** Deploys iOS emoji directly to Facebook, Messenger, and Lite variants in `app_ras_blobs/FacebookEmoji.ttf` with legitimate user ownership (`chmod 644`), while skipping Instagram to protect Story reply stability
 - **GMS Font Provider Deactivation:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services across all user profiles to prevent stock emoji font re-downloads or Google metadata injection
 - **Boot-time Gboard Emoji Cache Purge:** Clears Gboard layout, expression, and emoji superpacks (`files/superpacks/emoji*`) during boot so the keyboard re-indexes the system iOS font while keeping offline voice recognition models intact
 - **Automated Diagnostic Bundle:** Consolidates an Executive Health Summary, partition layout, overlay mount audit, font comparison table, technical ROM identification audit, and stage logs into `diagnostic_report.log`, auto-exported to `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log`
 - **AOSP-Guarded Checks:** Guards HyperOS checks (`MiFontOverlay`) so AOSP ROMs correctly report `N/A (AOSP / Not HyperOS — not required)` without false warnings
 - **Media Scanner (Magisk):** Broadcasts `MEDIA_SCANNER_SCAN_FILE` intents for all audio files so they appear in Android's sound picker
+
+### `dump_logs.sh` — On-Demand Diagnostic Tool
+
+Standalone root utility script included in the module root.
+
+- Can be executed anytime from Termux or ADB (`su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh`)
+- Re-runs the full diagnostic inspection suite on demand
+- Saves internal log to `/data/adb/modules/Sound_And_Emoji_IOS/diagnostic_report.log` and automatically exports to `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` for easy sharing
 
 ### `boot-completed.sh` — Post-Boot Hook (KSU/APatch)
 
@@ -409,7 +405,6 @@ Sound_And_Emoji_IOS/
 ├── system/
 │   ├── fonts/                         # Font replacements
 │   │   ├── NotoColorEmoji.ttf        # iOS emoji font (system-wide)
-│   │   ├── FacebookEmoji.ttf         # iOS emoji for Meta apps
 │   │   ├── SF-Pro-Display-Regular.ttf
 │   │   ├── SF-Pro-Display-Bold.ttf
 │   │   ├── SF-Pro-Display-Medium.ttf
@@ -421,7 +416,7 @@ Sound_And_Emoji_IOS/
 │   │   └── ... (+ italic variants)
 │   │
 │   └── product/media/audio/          # iOS sound files
-│       ├── ui/                        # 30 UI sounds
+│       ├── ui/                        # 24 UI sounds (+ aliases)
 │       ├── notifications/             # 7 notification sounds
 │       ├── ringtones/                 # 3 ringtones
 │       └── alarms/                    # 3 alarm sounds
@@ -434,8 +429,9 @@ Sound_And_Emoji_IOS/
 │   └── CHANGELOG.md                  # Full version history
 │
 ├── customize.sh                      # Installation script
+├── dump_logs.sh                      # On-demand diagnostic tool
 ├── post-fs-data.sh                   # Pre-mount cache cleaner
-├── post-mount.sh                     # Post-mount emoji lock (KSU/APatch)
+├── post-mount.sh                     # Post-mount SELinux relabeler (KSU/APatch)
 ├── service.sh                        # Late start service (universal)
 ├── boot-completed.sh                 # Post-boot hook (KSU/APatch)
 ├── sepolicy.rule                     # Custom SELinux policies
@@ -469,7 +465,7 @@ Meta apps (Facebook, Instagram, Messenger) use their own bundled emoji font (`Fa
 ```mermaid
 graph LR
     A["🔍 Find ALL *emoji*.ttf<br/>in /data/data/ & /data/user/0/"] --> B["📝 Replace with<br/>iOS emoji font"]
-    B --> C["🔒 Apply permissions<br/>(chmod 444)"]
+    B --> C["🔒 Apply permissions<br/>(chmod 644)"]
     C --> D["🚫 Block Messenger<br/>font downloads<br/>(chmod 000)"]
     D --> E["⛔ Disable GMS<br/>FontsProvider"]
     E --> F["🔄 Force-stop<br/>Meta apps"]
@@ -484,14 +480,14 @@ graph LR
 
 ### Targeted Apps
 
-| App | Package | Status |
-| :--- | :--- | :--- |
-| Facebook | `com.facebook.katana` | ✅ iOS Emojis |
-| Messenger | `com.facebook.orca` | ✅ iOS Emojis |
-| Facebook Lite | `com.facebook.lite` | ✅ iOS Emojis |
-| Messenger Lite | `com.facebook.mlite` | ✅ iOS Emojis |
-| Instagram | `com.instagram.android` | ✅ iOS Emojis |
-| InstaPro | `com.instapro.android` | ✅ iOS Emojis |
+| App | Package | Method | Status |
+| :--- | :--- | :--- | :--- |
+| Facebook | `com.facebook.katana` | Dynamic `FacebookEmoji.ttf` injection (`chmod 644`) | ✅ iOS Emojis |
+| Messenger | `com.facebook.orca` | Dynamic injection + download block | ✅ iOS Emojis |
+| Facebook Lite | `com.facebook.lite` | Dynamic `FacebookEmoji.ttf` injection | ✅ iOS Emojis |
+| Messenger Lite | `com.facebook.mlite` | Dynamic `FacebookEmoji.ttf` injection | ✅ iOS Emojis |
+| Instagram | `com.instagram.android` | Native system font fallback (Story crash protection) | ✅ iOS Emojis |
+| InstaPro | `com.instapro.android` | Native system font fallback (Story crash protection) | ✅ iOS Emojis |
 
 ---
 
@@ -529,10 +525,17 @@ The module supports in-app updates via the `updateJson` mechanism. Your root man
 
 The module automatically generates a comprehensive diagnostic report on every boot:
 
-- **Saved on device:** `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` (also at `/sdcard/Sound_And_Emoji_IOS_diagnostic.log`)
-- **Zero-root access required:** You can find this file directly inside your phone's default **Files** or **Downloads** app!
+- **Saved on device (Zero-Root Export):** `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` (also at `/sdcard/Sound_And_Emoji_IOS_diagnostic.log`)
+- **Internal module report (Root / Termux):** `/data/adb/modules/Sound_And_Emoji_IOS/diagnostic_report.log`
+- **Zero-root access required:** You can find the exported file directly inside your phone's default **Files** or **Downloads** app without needing root explorers!
 - **Attach to Issues:** If you experience any issues, simply open a new issue on GitHub and attach this file. It contains the complete status of partitions, metamodules, font sizes, audio paths, Gboard cache, technical ROM identification audits, and boot stage logs.
 - **Technical ROM Audit:** Includes section `[1b. ROM IDENTIFICATION AUDIT]` detailing raw queried properties, matched `build.prop` entries, custom ROM packages, and priv-app directories.
+- **Dedicated Stage Logs:** Each lifecycle stage preserves its own log file inside `/data/adb/modules/Sound_And_Emoji_IOS/`:
+  - `install.log` — Installer actions, partition choices, and OEM mappings
+  - `post-fs-data.log` — Pre-mount cache clearing and font directory immutable locks
+  - `post-mount.log` — Recursive SELinux context relabeling
+  - `service.log` — Runtime properties, app emoji deployments, and daemon status
+  - `boot-completed.log` — Post-boot property enforcement
 
 To generate a fresh diagnostic report on demand from a root terminal (Termux / ADB):
 ```sh
@@ -557,7 +560,7 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 <details>
 <summary><b>Sounds not changing after reboot</b></summary>
 
-1. Check if `service.log` exists in the module directory (`/data/adb/modules/Sound_And_Emoji_IOS/service.log`)
+1. Check if the diagnostic report exists: `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` or inside `/data/adb/modules/Sound_And_Emoji_IOS/diagnostic_report.log` (and `service.log`)
 2. Verify that `resetprop` is working: run `getprop ro.config.ringtone` — it should show `IOSDefaultRingtone.ogg`
 3. On Android 14+, the system may override `system.prop` — the module uses `resetprop` as fallback via `service.sh` and `boot-completed.sh`
 4. Clear your Settings app cache and check sound settings again
@@ -567,9 +570,9 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 <details>
 <summary><b>Emojis not changing in Gboard</b></summary>
 
-1. Clear Gboard app data: **Settings → Apps → Gboard → Clear Data**
+1. Clear Gboard app cache: **Settings → Apps → Gboard → Storage → Clear Cache**
 2. Reboot the device
-3. Check if `/data/fonts/` directory was removed (it should not exist)
+3. Check if `/data/fonts/files/` directory was cleaned and locked with `chattr +i` (it should have 0 files inside)
 4. Verify the module is enabled in your root manager
 
 </details>
@@ -578,9 +581,10 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 <summary><b>Facebook/Instagram still showing old emojis</b></summary>
 
 1. Force-stop the app
-2. Check `service.log` for errors
-3. Verify that the emoji file has read-only permissions: `ls -l /data/data/com.facebook.katana/app_ras_blobs/FacebookEmoji.ttf` — should show `-r--r--r--`
-4. If not, reboot — the module re-applies on every boot
+2. Check `service.log` or `diagnostic_report.log` for deployment status
+3. Verify that the emoji file in Facebook has valid permissions: `ls -l /data/data/com.facebook.katana/app_ras_blobs/FacebookEmoji.ttf` — should show `-rw-r--r--` (`644`) with the app's user ownership
+4. Note: Instagram safely uses native system font fallback directly to guarantee 100% Story editor and keyboard stability
+5. If not, reboot — the module re-applies on every boot
 
 </details>
 
@@ -596,9 +600,9 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 <details>
 <summary><b>KernelSU: Nothing is working</b></summary>
 
-1. **You MUST install a metamodule** (e.g., `meta-overlayfs`) for KernelSU to mount files into `/system/`
+1. **You MUST install a metamodule** (e.g., `meta-overlayfsx` / OverlayFS Enhanced, `meta-hybrid_mount`, `meta-overlayfs`, or `NanoMount`) for KernelSU to mount files into `/system/`
 2. The installer will show a warning if no metamodule is detected
-3. Install `meta-overlayfs` → Reboot → Re-flash this module → Reboot again
+3. Install the metamodule → Reboot → Re-flash this module → Reboot again
 
 </details>
 
@@ -614,7 +618,7 @@ HyperOS has a proprietary **MiFontOverlay** service that forces original fonts a
 5. Run the diagnostic tool to check status: `su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh`
 6. Look for `MiFontOverlay` and `fonts_custom.xml` lines in the report
 
-> **Note:** Sounds and SF Pro font work normally without DisableMiFontOverlay. Only emoji replacement requires it.
+> **Note:** Sounds and SF Pro font work normally without DisableMiFontOverlay. Only emoji replacement requires it. On AOSP custom ROMs (such as crDroid, Axion OS, LineageOS) running on Xiaomi hardware, `MiFontOverlay` is not present and DisableMiFontOverlay is not required.
 
 </details>
 
@@ -635,11 +639,11 @@ Devices rooted via gbl_root_canoe (fake locked bootloader) have extra requiremen
 <details>
 <summary><b>Gboard: Missing yellow skin tone or emojis locked to light skin</b></summary>
 
-1. In V2.0.12, the neutral yellow skin tone option has been completely restored via OpenType Format 14 CMAP (UVS).
+1. In V2.0.12+, the neutral yellow skin tone option has been completely restored via OpenType Format 14 CMAP (UVS).
 2. If your keyboard was previously locked to a skin tone, long-press any hand or person emoji.
 3. Select the first option (the neutral yellow emoji).
 4. Due to Gboard's native *One-Tap Skin Tone Preference* feature, Gboard will immediately apply the yellow color globally across all compatible emojis.
-5. If the menu still shows only 5 colors, re-flash the module or run `pm clear com.google.android.inputmethod.latin` in Termux/root shell.
+5. If the menu still shows only 5 colors, re-flash the module in your root manager (the installer performs a non-destructive emoji database and superpack reset) or clear Gboard cache in Settings → Apps → Gboard → Storage → Clear Cache, then reboot (avoid `pm clear` to preserve offline Faster Voice Typing).
 
 </details>
 
