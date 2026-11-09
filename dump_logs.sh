@@ -42,6 +42,43 @@ fi
   echo "Android OS        : $(getprop ro.build.version.release 2>/dev/null) (API $(getprop ro.build.version.sdk 2>/dev/null))"
   echo "Security Patch    : $(getprop ro.build.version.security_patch 2>/dev/null)"
   echo "Fingerprint       : $(getprop ro.build.fingerprint 2>/dev/null)"
+
+  aosp_rom="None (OEM Stock)"
+  crd_v=$(getprop ro.crdroid.version 2>/dev/null)
+  [ -z "$crd_v" ] && crd_v=$(getprop ro.crdroid.build.version 2>/dev/null)
+  lin_v=$(getprop ro.lineage.version 2>/dev/null)
+  [ -z "$lin_v" ] && lin_v=$(getprop ro.lineage.build.version 2>/dev/null)
+  axi_v=$(getprop ro.axion.version 2>/dev/null)
+  evo_v=$(getprop ro.evolution.version 2>/dev/null)
+  b_disp=$(getprop ro.build.display.id 2>/dev/null)
+  m_prop=$(getprop ro.modversion 2>/dev/null)
+
+  if [ -n "$crd_v" ] || echo "$m_prop $b_disp" | grep -qi "crdroid"; then
+    aosp_rom="crDroid${crd_v:+ (v$crd_v)}"
+  elif [ -n "$lin_v" ] || echo "$m_prop $b_disp" | grep -qi "lineage"; then
+    aosp_rom="LineageOS${lin_v:+ (v$lin_v)}"
+  elif [ -n "$axi_v" ] || echo "$m_prop $b_disp" | grep -qi "axion"; then
+    aosp_rom="Axion OS${axi_v:+ (v$axi_v)}"
+  elif [ -n "$evo_v" ] || echo "$m_prop $b_disp" | grep -qi "evolution"; then
+    aosp_rom="Evolution X${evo_v:+ (v$evo_v)}"
+  elif echo "$m_prop $b_disp" | grep -qi "pixelos"; then
+    aosp_rom="PixelOS"
+  elif echo "$m_prop $b_disp" | grep -qi "rising"; then
+    aosp_rom="RisingOS"
+  elif echo "$m_prop $b_disp" | grep -qi "matrixx"; then
+    aosp_rom="Project Matrixx"
+  elif echo "$m_prop $b_disp" | grep -qi "derp"; then
+    aosp_rom="DerpFest"
+  elif [ -n "$(getprop ro.rom.version 2>/dev/null)" ]; then
+    aosp_rom="Custom AOSP (v$(getprop ro.rom.version 2>/dev/null))"
+  elif [ -z "$(getprop ro.miui.ui.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.mi.os.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.build.version.oneui 2>/dev/null)" ]; then
+    if [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+      case "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" in
+        xiaomi|poco|redmi|samsung) aosp_rom="AOSP Custom / Pure AOSP" ;;
+      esac
+    fi
+  fi
+  echo "Custom ROM        : $aosp_rom"
   echo "ROM Skin          : MIUI=$(getprop ro.miui.ui.version.name 2>/dev/null) | HyperOS=$(getprop ro.mi.os.version.name 2>/dev/null) | OneUI=$(getprop ro.build.version.oneui 2>/dev/null)"
   echo "Root Manager      : $ROOT_MGR"
 

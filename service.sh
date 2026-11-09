@@ -74,6 +74,44 @@ elif [ "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:
 fi
 log "INFO: OPPO/OnePlus/Realme detected: $IS_OPPO"
 
+# ─── Custom AOSP ROM Detection ──────────────────────────────────────
+AOSP_ROM_NAME="None (OEM Stock)"
+crd_v=$(getprop ro.crdroid.version 2>/dev/null)
+[ -z "$crd_v" ] && crd_v=$(getprop ro.crdroid.build.version 2>/dev/null)
+lin_v=$(getprop ro.lineage.version 2>/dev/null)
+[ -z "$lin_v" ] && lin_v=$(getprop ro.lineage.build.version 2>/dev/null)
+axi_v=$(getprop ro.axion.version 2>/dev/null)
+evo_v=$(getprop ro.evolution.version 2>/dev/null)
+b_disp=$(getprop ro.build.display.id 2>/dev/null)
+m_prop=$(getprop ro.modversion 2>/dev/null)
+
+if [ -n "$crd_v" ] || echo "$m_prop $b_disp" | grep -qi "crdroid"; then
+  AOSP_ROM_NAME="crDroid${crd_v:+ (v$crd_v)}"
+elif [ -n "$lin_v" ] || echo "$m_prop $b_disp" | grep -qi "lineage"; then
+  AOSP_ROM_NAME="LineageOS${lin_v:+ (v$lin_v)}"
+elif [ -n "$axi_v" ] || echo "$m_prop $b_disp" | grep -qi "axion"; then
+  AOSP_ROM_NAME="Axion OS${axi_v:+ (v$axi_v)}"
+elif [ -n "$evo_v" ] || echo "$m_prop $b_disp" | grep -qi "evolution"; then
+  AOSP_ROM_NAME="Evolution X${evo_v:+ (v$evo_v)}"
+elif echo "$m_prop $b_disp" | grep -qi "pixelos"; then
+  AOSP_ROM_NAME="PixelOS"
+elif echo "$m_prop $b_disp" | grep -qi "rising"; then
+  AOSP_ROM_NAME="RisingOS"
+elif echo "$m_prop $b_disp" | grep -qi "matrixx"; then
+  AOSP_ROM_NAME="Project Matrixx"
+elif echo "$m_prop $b_disp" | grep -qi "derp"; then
+  AOSP_ROM_NAME="DerpFest"
+elif [ -n "$(getprop ro.rom.version 2>/dev/null)" ]; then
+  AOSP_ROM_NAME="Custom AOSP (v$(getprop ro.rom.version 2>/dev/null))"
+elif [ -z "$(getprop ro.miui.ui.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.mi.os.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.build.version.oneui 2>/dev/null)" ]; then
+  if [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+    case "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" in
+      xiaomi|poco|redmi|samsung) AOSP_ROM_NAME="AOSP Custom / Pure AOSP" ;;
+    esac
+  fi
+fi
+log "INFO: Custom AOSP ROM detected: $AOSP_ROM_NAME"
+
 # ─── Universal Audio Base Path Detection ─────────────────────────────
 # Scan ALL possible audio locations to find where this device stores sounds.
 # This handles Samsung, Xiaomi, OPPO, and custom ROMs that use non-standard paths.
@@ -1032,6 +1070,7 @@ generate_diagnostic_report() {
     echo "Android OS        : $(getprop ro.build.version.release 2>/dev/null) (API $(getprop ro.build.version.sdk 2>/dev/null))"
     echo "Security Patch    : $(getprop ro.build.version.security_patch 2>/dev/null)"
     echo "Fingerprint       : $(getprop ro.build.fingerprint 2>/dev/null)"
+    echo "Custom ROM        : $AOSP_ROM_NAME"
     echo "ROM Skin          : MIUI=$(getprop ro.miui.ui.version.name 2>/dev/null) | HyperOS=$(getprop ro.mi.os.version.name 2>/dev/null) | OneUI=$(getprop ro.build.version.oneui 2>/dev/null)"
     echo "Root Manager      : $ROOT_MGR"
 

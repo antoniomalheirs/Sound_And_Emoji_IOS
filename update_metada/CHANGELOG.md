@@ -4,6 +4,11 @@
 
 # Changelogs
 
+#### V2.0.21 — Dynamic Custom AOSP ROM Name Detection & Diagnostic Transparency
+- **FEAT (Dynamic Custom AOSP ROM Detection in Installer):** Replaced static `(Axion OS / AOSP)` installer notification in `customize.sh` with granular dynamic detection across major AOSP custom ROMs. The installer now accurately identifies and reports the exact running ROM name and version (e.g. `crDroid`, `LineageOS`, `Axion OS`, `Evolution X`, `PixelOS`, `RisingOS`, `Project Matrixx`, `DerpFest`, `Paranoid Android / AOSPA`, `ArrowOS`, `Havoc-OS`, `SparkOS`, `CalyxOS`, `GrapheneOS`, etc.) via system properties (`ro.crdroid.version`, `ro.lineage.version`, `ro.axion.version`, `ro.evolution.version`, `ro.modversion`, and `ro.build.display.id`), eliminating misleading Axion OS labeling on crDroid and other ROMs.
+- **IMPROVED (Custom ROM Field in Diagnostic Reports):** Added a dedicated `Custom ROM` entry to the Executive Health Summary in both `service.sh` and `dump_logs.sh`, reporting the specific custom ROM name alongside OEM hardware info and root manager metrics.
+- **ACCURACY & ZERO FALSE POSITIVES:** All changes strictly preserve existing hardware OEM audio and emoji font compatibility mappings while delivering 100% truthful, surgical logging.
+
 #### V2.0.20 — Advanced Engineering Audit: Metamodule Discovery, AOSP Accuracy & Performance
 - **FIX (Metamodule Discovery in Diagnostics):** Upgraded metamodule detection in `service.sh` and `dump_logs.sh` from an obsolete static path list to dynamic discovery (`metamodule=1` in `module.prop` and pattern matching `meta-*`, `*overlayfs*`). Eliminates false negative where active metamodules like `meta-overlayfsx` (OverlayFS Enhanced) were reported as "None detected".
 - **FIX (AOSP vs OEM Accuracy in Installer):** In `customize.sh`, separated genuine OEM skin detection from device hardware mapping. On AOSP custom ROMs running on Xiaomi, POCO, Redmi, Samsung, or OPPO hardware, the installer now accurately logs hardware compatibility mapping without mislabeling the AOSP ROM as "Xiaomi/MIUI/HyperOS" or "Samsung/OneUI".
