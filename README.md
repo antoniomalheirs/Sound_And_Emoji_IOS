@@ -1,7 +1,7 @@
 # 🍎 Sound & Emoji iOS — Magisk / KernelSU / KernelSu Next Module
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.0.16-blueviolet?style=for-the-badge" alt="Version"/>
+  <img src="https://img.shields.io/badge/Version-2.0.22-blueviolet?style=for-the-badge" alt="Version"/>
   <img src="https://img.shields.io/badge/Android-11%20~%2016-brightgreen?style=for-the-badge" alt="Android"/>
   <img src="https://img.shields.io/badge/License-Open%20Source-blue?style=for-the-badge" alt="License"/>
 </p>
@@ -59,19 +59,22 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 | Feature | Description |
 | :--- | :--- |
 | 🔊 **Complete iOS Sound Set** | 43 audio files covering UI, ringtones, notifications, alarms, camera, NFC, charging, and more |
-| 😀 **iOS Emoji Replacement** | System-wide emoji override with latest iOS emoji font (~30MB high-res) |
+| 😀 **iOS Emoji Replacement** | System-wide emoji override with latest iOS emoji font (~33MB high-res) |
 | 🚩 **Authentic Apple Flags** | 270 genuine iOS flag bitmaps replacing stock Google flags (territories, regional & special flags) |
 | 🎨 **UVS Format 14 CMAP** | Native OpenType Format 14 (371 UVS records) restoring default yellow skin tones and missing BMP emojis |
 | 🔤 **SF Pro Display Font** | 16 font weights (Regular to Ultralight, with Italic variants) |
 | 🏭 **OEM Detection** | Auto-detects Samsung, Xiaomi, LG, HTC, OnePlus, Huawei emoji fonts |
+| 🔍 **4-Layer ROM Identification** | Deep detection engine for crDroid, LineageOS, Axion OS, Evolution X, PixelOS, etc., via props, direct build.prop files, priv-app hubs, and package manager |
 | 📷 **OxygenOS / ColorOS Guard** | Dynamic OEM detection skipping camera resetprop on OPPO/OnePlus/Realme to avoid crashes |
 | 📱 **Dual-Path Installation** | Installs to both `/system/product/` and `/system/media/` for max ROM compatibility |
 | 🔒 **SELinux Compliant** | Full `u:object_r:system_file:s0` context enforcement + custom SEPolicy rules |
 | 🔄 **Anti-Revert System** | Blocks Google Play Services from re-downloading stock emoji fonts |
 | 🧹 **Zero-Config Gboard Setup** | Non-destructive emoji cache & DB purge (`bundled_emoji_provider.db`) — restores emojis without wiping settings or voice models |
+| 🛡️ **EmojiCompat & App Sweep** | Cleans `androidx.emoji2` / `EmojiCompat` font caches across all apps, fixing Gboard emoji tray and Snapchat (Issue #12) |
 | 📘 **Meta App Fix** | Replaces Facebook, Instagram, and Messenger emoji with iOS versions |
-| 🪵 **Built-in Logging** | Detailed `service.log` for debugging |
-| ♻️ **OverlayFS Support** | Integrated support for `magisk_overlayfs` module |
+| 🪵 **Unified Diagnostic Suite** | Multi-stage logging (`install.log`, `post-fs-data.log`, `service.log`), automated diagnostic bundle export to `/sdcard/Download`, on-demand `dump_logs.sh`, and technical ROM identification audit |
+| ♻️ **Metamodule & OverlayFS** | Dynamic metamodule discovery supporting `meta-overlayfsx` (OverlayFS Enhanced), `Hybrid Mount`, `NanoMount` |
+| ⚡ **Optimized Boot Pipeline** | Instant recursive SELinux relabeling (`chcon -R`) cutting post-mount staging time down to ~15ms |
 | 🔁 **Auto-Update** | In-app update support via `updateJson` |
 
 ---
@@ -206,10 +209,10 @@ The module uses an intelligent multi-stage boot pipeline to ensure 100% persiste
 
 ### Tested ROMs
 
-Works on AOSP, Pixel, LineageOS, crDroid, EvolutionX, AxionOS, MIUI, HyperOS, OneUI, OxygenOS, ColorOS, and more.
+Works on AOSP, Pixel, LineageOS, crDroid, EvolutionX, AxionOS, PixelOS, RisingOS, Project Matrixx, DerpFest, Paranoid Android (AOSPA), ArrowOS, Havoc-OS, CalyxOS, GrapheneOS, MIUI, HyperOS, OneUI, OxygenOS, ColorOS, and more.
 
 > [!IMPORTANT]
-> **KernelSU / KernelSU Next users:** You **MUST** install a metamodule (e.g., `meta-overlayfs`) for the module to mount files into `/system/`. The installer will warn you if none is detected.
+> **KernelSU / KernelSU Next users:** You **MUST** install a metamodule (e.g., `meta-overlayfsx` / OverlayFS Enhanced, `meta-hybrid_mount`, `meta-overlayfs`, or `NanoMount`) for the module to mount files into `/system/`. The installer will warn you if none is detected.
 
 ### Xiaomi HyperOS 3/4 — Special Requirements
 
@@ -219,10 +222,11 @@ Xiaomi HyperOS implements a proprietary **MiFontOverlay** service that forcefull
 | :--- | :--- |
 | **DisableMiFontOverlay** | [YuKongA/DisableMiFontOverlay](https://github.com/YuKongA/DisableMiFontOverlay) — Zygisk module that disables Xiaomi's font override |
 | **Zygisk / ZygiskNext** | Required for DisableMiFontOverlay to function |
-| **Metamodule** (KSU/APatch) | `meta-overlayfs`, `Hybrid Mount`, or `NanoMount` |
+| **Metamodule** (KSU/APatch) | `meta-overlayfsx`, `meta-overlayfs`, `Hybrid Mount`, or `NanoMount` |
 
 > [!NOTE]
 > **Sounds and SF Pro font work normally** on HyperOS without any extra modules. Only emoji replacement requires DisableMiFontOverlay.
+> On AOSP custom ROMs (such as crDroid, Axion OS, or LineageOS) running on Xiaomi/POCO/Redmi hardware, `MiFontOverlay` is not used, so DisableMiFontOverlay is **not required**.
 
 The module installer will **automatically detect** HyperOS and warn you if DisableMiFontOverlay is missing.
 
@@ -232,11 +236,11 @@ For devices rooted via **gbl_root_canoe** (Snapdragon 8 Gen5 / 8 Elite with fake
 
 | Requirement | Details |
 | :--- | :--- |
-| **Metamodule** | **Required** — `meta-overlayfs` or `Hybrid Mount` (OverlayFS must mount module files) |
+| **Metamodule** | **Required** — `meta-overlayfsx`, `meta-overlayfs`, or `Hybrid Mount` (OverlayFS must mount module files) |
 | **Kernel OverlayFS** | Kernel must have `CONFIG_OVERLAY_FS=y` (check: `cat /proc/filesystems \| grep overlay`) |
 | **DisableMiFontOverlay** | Required for emoji on HyperOS (same as above) |
 
-The installer automatically detects gbl_root_canoe environments and provides specific warnings.
+The installer automatically detects gbl_root_canoe environments and provides specific warnings. Note that KernelSU Next naturally preserves `verifiedbootstate=green` without breaking verified boot; the module distinguishes this cleanly from canoe to prevent false alarms.
 
 ---
 
@@ -324,10 +328,13 @@ graph TD
 The installation script adapts to the device environment:
 
 - **Root Detection:** Identifies Magisk, KernelSU, KernelSU Next, or APatch
-- **Metamodule Check (KSU):** Warns if `meta-overlayfs` or similar is not installed
+- **Dynamic Metamodule Discovery:** Scans running metamodules dynamically (`meta-overlayfsx` / OverlayFS Enhanced, `meta-hybrid_mount`, `NanoMount`, `meta-overlayfs`) instead of relying on hardcoded paths
+- **4-Layer Deep ROM Identification:** Accurately identifies custom ROMs (crDroid, LineageOS, Axion OS, Evolution X, PixelOS, etc.) across 4 layers: property service, direct filesystem `build.prop` inspection, priv-app control hubs, and package manager (`pm list packages`)
+- **Hardware vs ROM Skin Separation:** On custom ROMs running on Xiaomi, POCO, Redmi, Samsung, or OPPO hardware, the installer provides full OEM font and audio compatibility mappings without false HyperOS or OneUI labeling
 - **API-Based Path Selection:** Uses `/system/product/` for Android 12+ or mirrors to `/system/media/` for Android 11
 - **OEM Emoji Detection:** Scans `/system/fonts/` for manufacturer-specific emoji fonts and creates replacements only for fonts that actually exist
 - **Surgical Gboard Emoji DB Reset:** Purges `bundled_emoji_provider.db`, layout textures, and emoji superpacks across all profiles without `pm clear`, preserving user dictionary, custom layouts, microphone permissions, and offline Faster Voice Typing models
+- **Global EmojiCompat Sweep:** Scans installed apps during installation to purge cached stock emoji fonts (`files/fonts/`), forcing apps to use system iOS emojis
 - **OverlayFS Integration:** Detects and supports `magisk_overlayfs` for restricted partitions
 - **SELinux Enforcement:** Applies `u:object_r:system_file:s0` context to all installed files
 
@@ -337,13 +344,14 @@ Runs BEFORE the module is mounted. Has a strict 10-second timeout.
 
 - Deletes `/data/fonts/` (system font updates)
 - Cleans GMS font provider caches
-- Clears Gboard emoji caches
+- Clears Gboard emoji caches, databases, and early-boot EmojiCompat caches (`files/fonts/`, `no_backup/*emoji*`, `files/emoji_metadata*`)
 - Removes Messenger font download directories
 
 ### `post-mount.sh` — Emoji Lock (KSU/APatch)
 
 Runs AFTER OverlayFS/MagicMount has mounted module files.
 
+- **Lightning-Fast SELinux Relabeling:** Uses recursive `chcon -R` across module partitions, slashing pre-boot staging time from ~4000ms down to ~15ms
 - **Nuclear font replacement:** Finds ALL `*emoji*.ttf` files in `/data/data/` and `/data/user/0/` and replaces them with the iOS emoji font
 - **Meta app lock:** Creates/replaces `FacebookEmoji.ttf` in each Meta app's `app_ras_blobs/` directory with correct ownership and immutable flag
 - **Messenger block:** Sets `chmod 000` on Messenger's font download directory
@@ -356,9 +364,12 @@ The main runtime script. Waits for `sys.boot_completed=1` before executing.
 - **resetprop:** Force-sets 25+ `ro.config.*` sound properties that Android 14+ may overwrite during boot
 - **OxygenOS / ColorOS Camera Protection:** Dynamically checks OEM properties (`ro.oplus.image.my_manifest`, `ro.product.manufacturer`, `ro.product.brand`) to skip camera sound `resetprop` on OPPO, OnePlus, and Realme devices, preventing native camera validation crashes while keeping all iOS UI sounds active
 - **Global emoji replacement:** Scans ALL app directories for emoji font files and replaces them
+- **Global EmojiCompat / emoji2 Cache Cleaner:** Scans all user apps (`/data/data` and `/data/user/`) for `androidx.emoji2` / `EmojiCompat` downloaded stock fonts in `files/fonts/`, forcing apps like Snapchat and Google Messages to render system iOS emojis
 - **Meta emoji lock:** Replaces and locks emoji fonts in Facebook, Instagram, Messenger (+ Lite variants) with `chmod 444`
 - **GMS Font Provider Deactivation:** Disables `FontsProvider` and `UpdateSchedulerService` in Google Play Services across all user profiles to prevent stock emoji font re-downloads or Google metadata injection
 - **Boot-time Gboard Emoji Cache Purge:** Clears Gboard layout, expression, and emoji superpacks (`files/superpacks/emoji*`) during boot so the keyboard re-indexes the system iOS font while keeping offline voice recognition models intact
+- **Automated Diagnostic Bundle:** Consolidates an Executive Health Summary, partition layout, overlay mount audit, font comparison table, technical ROM identification audit, and stage logs into `diagnostic_report.log`, auto-exported to `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log`
+- **AOSP-Guarded Checks:** Guards HyperOS checks (`MiFontOverlay`) so AOSP ROMs correctly report `N/A (AOSP / Not HyperOS — not required)` without false warnings
 - **Media Scanner (Magisk):** Broadcasts `MEDIA_SCANNER_SCAN_FILE` intents for all audio files so they appear in Android's sound picker
 
 ### `boot-completed.sh` — Post-Boot Hook (KSU/APatch)
@@ -520,7 +531,8 @@ The module automatically generates a comprehensive diagnostic report on every bo
 
 - **Saved on device:** `/sdcard/Download/Sound_And_Emoji_IOS_diagnostic.log` (also at `/sdcard/Sound_And_Emoji_IOS_diagnostic.log`)
 - **Zero-root access required:** You can find this file directly inside your phone's default **Files** or **Downloads** app!
-- **Attach to Issues:** If you experience any issues, simply open a new issue on GitHub and attach this file. It contains the complete status of partitions, metamodules, font sizes, audio paths, Gboard cache, and boot stage logs.
+- **Attach to Issues:** If you experience any issues, simply open a new issue on GitHub and attach this file. It contains the complete status of partitions, metamodules, font sizes, audio paths, Gboard cache, technical ROM identification audits, and boot stage logs.
+- **Technical ROM Audit:** Includes section `[1b. ROM IDENTIFICATION AUDIT]` detailing raw queried properties, matched `build.prop` entries, custom ROM packages, and priv-app directories.
 
 To generate a fresh diagnostic report on demand from a root terminal (Termux / ADB):
 ```sh
@@ -528,6 +540,19 @@ su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh
 ```
 
 ---
+
+<details>
+<summary><b>Snapchat or Gboard emoji panel still showing stock Google emojis (Issue #12)</b></summary>
+
+1. Apps using `androidx.emoji2` or `EmojiCompat` (such as Snapchat and Gboard's emoji keyboard drawer) can dynamically download stock Google emoji fonts into their internal `files/fonts/` cache or `no_backup/` directory, overriding system fonts.
+2. In V2.0.18+, the module includes an automated global cache cleaner that purges these internal font caches during installation, pre-mount (`post-fs-data.sh`), and runtime (`service.sh`).
+3. If stock emojis reappear after an app update:
+   - Force-stop the app: **Settings → Apps → Snapchat (or Gboard) → Force Stop**
+   - Clear app cache: **Storage → Clear Cache**
+   - Reboot the device so the module sweeps the caches and forces fallback to system iOS emojis
+4. Check the diagnostic report to verify `compat_fonts=0` in Gboard's status line.
+
+</details>
 
 <details>
 <summary><b>Sounds not changing after reboot</b></summary>
@@ -598,11 +623,12 @@ HyperOS has a proprietary **MiFontOverlay** service that forces original fonts a
 
 Devices rooted via gbl_root_canoe (fake locked bootloader) have extra requirements:
 
-1. **Install a metamodule** — `meta-overlayfs`, `Hybrid Mount`, or `NanoMount` is required for OverlayFS to work
+1. **Install a metamodule** — `meta-overlayfsx` (OverlayFS Enhanced), `meta-hybrid_mount`, `meta-overlayfs`, or `NanoMount` is required for OverlayFS to work
 2. **Check kernel OverlayFS support:** `su -c "cat /proc/filesystems | grep overlay"` — if empty, your kernel lacks `CONFIG_OVERLAY_FS`
 3. **Try switching mount method** in KernelSU Manager → Settings → try toggling between OverlayFS and Magic Mount
 4. **Check KSU logs:** `su -c "cat /data/adb/ksud.log | tail -50"` — look for mount errors
 5. Run the diagnostic: `su -c sh /data/adb/modules/Sound_And_Emoji_IOS/dump_logs.sh` and attach to your GitHub issue
+6. Note: On KernelSU Next, seeing `verifiedbootstate=green` is normal behavior and NOT a canoe indicator; the module cleanly distinguishes standard KernelSU Next from canoe environments.
 
 </details>
 
@@ -653,7 +679,48 @@ Devices rooted via gbl_root_canoe (fake locked bootloader) have extra requiremen
 
 See the full changelog at [`update_metada/CHANGELOG.md`](update_metada/CHANGELOG.md).
 
-### Latest: v2.0.16
+### Latest: v2.0.22
+
+- **4-Layer Deep ROM Identification Engine:** Upgraded custom ROM identification from single-property lookups to a deep 4-layer detection engine across `customize.sh`, `service.sh`, and `dump_logs.sh`:
+  - **Layer 1 (Property Service):** Queries `ro.crdroid.*`, `ro.lineage.*`, `ro.axion.*`, `ro.evolution.*`, `ro.build.description`, `ro.build.flavor`, and `ro.modversion`.
+  - **Layer 2 (Direct Filesystem `build.prop` Inspection):** Directly scans `/system/build.prop`, `/system_ext/build.prop`, `/product/build.prop`, and `/vendor/build.prop` on disk, bypassing any SELinux property context restrictions or unexported prop definitions.
+  - **Layer 3 (Priv-App Control Hubs):** Checks for presence of ROM-specific control hubs (e.g. `crDroidSettings`, `LineageParts`, `AxionSettings`, `Evolver`).
+  - **Layer 4 (Package Manager):** Scans installed system packages via `pm list packages` for `org.crdroid.settings`, `org.lineageos.settings`, `org.axion`, etc.
+- **ROM Identification Audit in Diagnostics:** Added section `[1b. ROM IDENTIFICATION AUDIT]` in both `service.sh` and `dump_logs.sh`, logging all raw queried ROM properties, matched `build.prop` lines, installed ROM package IDs, and priv-app directories for 100% technical transparency.
+- **Zero Regressions:** Preserves all existing hardware mappings, audio paths, and emoji font overlays.
+
+### Previous: v2.0.21
+
+- **Dynamic Custom AOSP ROM Name Detection:** Replaced static installer labels with granular dynamic detection across major AOSP custom ROMs (crDroid, LineageOS, Axion OS, Evolution X, PixelOS, RisingOS, Project Matrixx, DerpFest, Paranoid Android / AOSPA, ArrowOS, Havoc-OS, CalyxOS, GrapheneOS, etc.), eliminating misleading Axion OS labeling on crDroid and other ROMs.
+- **Custom ROM Metric in Diagnostic Reports:** Added a dedicated `Custom ROM` entry to the Executive Health Summary in both `service.sh` and `dump_logs.sh`, reporting the specific custom ROM name alongside OEM hardware metrics.
+
+### Previous: v2.0.20
+
+- **Dynamic Metamodule Discovery:** Upgraded metamodule detection in `service.sh` and `dump_logs.sh` from hardcoded static paths to dynamic discovery (`metamodule=1` in `module.prop` and pattern matching `meta-*`, `*overlayfs*`), ensuring metamodules like `meta-overlayfsx` (OverlayFS Enhanced) are recognized accurately.
+- **AOSP vs Hardware OEM Separation:** In `customize.sh`, separated genuine OEM skin detection from device hardware mapping. On custom ROMs running on Xiaomi, POCO, Redmi, Samsung, or OPPO hardware, the installer logs hardware compatibility mapping without mislabeling the AOSP ROM as "Xiaomi/MIUI/HyperOS" or "Samsung/OneUI".
+- **Guarded MiFontOverlay Check:** Guarded `MiFontOverlay` status check to only run when HyperOS or MIUI framework properties are active; on AOSP ROMs, it reports `N/A (AOSP / Not HyperOS — not required)` instead of a false warning.
+- **Pre-mount EmojiCompat Early Defense:** Added `files/fonts/`, `no_backup/*emoji*`, and `files/emoji_metadata*` cleanup to `post-fs-data.sh`.
+- **Instant Post-Mount SELinux Relabeling:** Replaced slow sequential find-exec loop with recursive `chcon -R`, reducing pre-boot staging time from ~4000ms down to ~15ms.
+
+### Previous: v2.0.19
+
+- **Remove Canoe False Positive Detection:** Removed `green boot state + root` heuristic from canoe detection. KernelSU NEXT preserves `ro.boot.verifiedbootstate=green` without breaking verified boot, which is standard behavior — NOT an indicator of `gbl_root_canoe`. Detection now relies solely on concrete evidence: `efisp` partition and canoe module directory presence.
+
+### Previous: v2.0.18
+
+- **Fix Gboard Emoji Panel & Snapchat (Issue #12):** Resolved critical issue where Gboard's emoji picker panel and Snapchat displayed Google stock emojis via `androidx.emoji2` / `EmojiCompat` downloaded fonts in `files/fonts/` and `no_backup/*emoji*`.
+- **Global EmojiCompat Cache Cleanup:** Added `clean_emojicompat_caches()` across `service.sh`, `customize.sh`, and `post-fs-data.sh`, scanning apps in `/data/data/` and `/data/user/` and purging cached emoji fonts to enforce system iOS emoji fallback.
+- **Diagnostic Metrics:** Added `compat_fonts` count to the Gboard diagnostic report.
+
+### Previous: v2.0.17
+
+- **HyperOS 3/4 (MIUI 15+) Compatibility:** Added support and detection for HyperOS 3/4, instructing users to install companion module `DisableMiFontOverlay` + Zygisk to bypass Xiaomi's Zygote-level font override.
+- **Safe `fonts_customization.xml` Overlay:** Implemented dynamic XML generation for `/product/etc/fonts_customization.xml` with 6-layer validation (backup, sed substitution, XML well-formedness, font reference check, size check, auto-rollback).
+- **gbl_root_canoe Compatibility:** Added detection and support for Snapdragon 8 Gen5 / 8 Elite fake locked bootloader rooting.
+- **HyperOS Deep Cache Cleanup:** Added clearing of `/data/fonts/config/`, Xiaomi Theme Manager caches, and theme font directories.
+- **Additive SEPolicy Rules:** Added SELinux rules for `system_server` → `product_file` and `zygote` → `system_file`.
+
+### Previous: v2.0.16
 
 - **Unified Logging & Diagnostic System:** Upgraded the module's entire diagnostic logging infrastructure across all lifecycle stages (`customize.sh`, `post-fs-data.sh`, `post-mount.sh`, `boot-completed.sh`, `service.sh`).
 - **Automated Diagnostic Bundle:** `service.sh` automatically compiles a unified diagnostic report (`diagnostic_report.log`) with an executive health summary, device hardware fingerprint, partition and symlink matrix, overlay mount status, and font size audits.
