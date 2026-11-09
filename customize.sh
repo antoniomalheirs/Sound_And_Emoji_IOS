@@ -243,28 +243,44 @@ IS_TCL=false
 IS_FAIRPHONE=false
 
 # ── Detect Custom AOSP ROMs (crDroid, LineageOS, Axion OS, Evolution X, PixelOS, etc.) ──
-# On custom AOSP ROMs, hardware properties like ro.product.manufacturer still report
-# 'Xiaomi' or 'Samsung', but the operating system is pure AOSP (NOT MIUI, HyperOS, or OneUI).
+# Multi-layered inspection across:
+#   1. System properties (getprop)
+#   2. build.prop files on disk (bypasses SELinux property context restrictions)
+#   3. ROM-specific priv-app / app packages on filesystem
+#   4. Android Package Manager (pm list packages)
+#   5. Hardware vs Framework absence (fallback)
 IS_CUSTOM_AOSP=false
 AOSP_ROM_NAME=""
 
-CRDROID_VER=$(getprop ro.crdroid.version 2>/dev/null)
+# Layer 1: System Properties via getprop
+CRDROID_VER=$(getprop ro.crdroid.display.version 2>/dev/null)
+[ -z "$CRDROID_VER" ] && CRDROID_VER=$(getprop ro.crdroid.version 2>/dev/null)
 [ -z "$CRDROID_VER" ] && CRDROID_VER=$(getprop ro.crdroid.build.version 2>/dev/null)
 [ -z "$CRDROID_VER" ] && CRDROID_VER=$(getprop ro.cr.version 2>/dev/null)
+CRDROID_VER="${CRDROID_VER#v}"
+CRDROID_VER="${CRDROID_VER#V}"
 
-AXION_VER=$(getprop ro.axion.version 2>/dev/null)
-[ -z "$AXION_VER" ] && AXION_VER=$(getprop ro.axion.display.version 2>/dev/null)
+AXION_VER=$(getprop ro.axion.display.version 2>/dev/null)
+[ -z "$AXION_VER" ] && AXION_VER=$(getprop ro.axion.version 2>/dev/null)
+AXION_VER="${AXION_VER#v}"
+AXION_VER="${AXION_VER#V}"
 
-LINEAGE_VER=$(getprop ro.lineage.version 2>/dev/null)
+LINEAGE_VER=$(getprop ro.lineage.display.version 2>/dev/null)
+[ -z "$LINEAGE_VER" ] && LINEAGE_VER=$(getprop ro.lineage.version 2>/dev/null)
 [ -z "$LINEAGE_VER" ] && LINEAGE_VER=$(getprop ro.lineage.build.version 2>/dev/null)
-[ -z "$LINEAGE_VER" ] && LINEAGE_VER=$(getprop ro.lineage.display.version 2>/dev/null)
+LINEAGE_VER="${LINEAGE_VER#v}"
+LINEAGE_VER="${LINEAGE_VER#V}"
 
-EVO_VER=$(getprop ro.evolution.version 2>/dev/null)
+EVO_VER=$(getprop ro.evolution.display.version 2>/dev/null)
+[ -z "$EVO_VER" ] && EVO_VER=$(getprop ro.evolution.version 2>/dev/null)
+EVO_VER="${EVO_VER#v}"
+EVO_VER="${EVO_VER#V}"
+
 PIXELOS_VER=$(getprop ro.pixelos.version 2>/dev/null)
 RISING_VER=$(getprop ro.rising.version 2>/dev/null)
 MATRIXX_VER=$(getprop ro.matrixx.version 2>/dev/null)
-DERP_VER=$(getprop ro.derp.version 2>/dev/null)
-[ -z "$DERP_VER" ] && DERP_VER=$(getprop ro.derpfest.version 2>/dev/null)
+DERP_VER=$(getprop ro.derpfest.version 2>/dev/null)
+[ -z "$DERP_VER" ] && DERP_VER=$(getprop ro.derp.version 2>/dev/null)
 AOSPA_VER=$(getprop ro.aospa.version 2>/dev/null)
 ARROW_VER=$(getprop ro.arrow.version 2>/dev/null)
 HAVOC_VER=$(getprop ro.havoc.version 2>/dev/null)
@@ -273,30 +289,21 @@ CALYX_VER=$(getprop ro.calyxos.version 2>/dev/null)
 GRAPHENE_VER=$(getprop ro.grapheneos.version 2>/dev/null)
 AOSP_VERSION=$(getprop ro.rom.version 2>/dev/null)
 
-if [ -n "$CRDROID_VER" ]; then
+BUILD_PROP_FILES="/system/build.prop /system/etc/build.prop /system_ext/build.prop /system_ext/etc/build.prop /product/build.prop /product/etc/build.prop /vendor/build.prop /odm/etc/build.prop /system/system/build.prop"
+
+# Match Layer 1 (getprop)
+if [ -n "$CRDROID_VER" ] || [ -n "$(getprop ro.crdroid.device 2>/dev/null)" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "crdroid"; then
   IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="crDroid (v$CRDROID_VER)"
-elif echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "crdroid"; then
+  AOSP_ROM_NAME="crDroid${CRDROID_VER:+ (v$CRDROID_VER)}"
+elif [ -n "$LINEAGE_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "lineage"; then
   IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="crDroid"
-elif [ -n "$LINEAGE_VER" ]; then
+  AOSP_ROM_NAME="LineageOS${LINEAGE_VER:+ (v$LINEAGE_VER)}"
+elif [ -n "$AXION_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "axion"; then
   IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="LineageOS (v$LINEAGE_VER)"
-elif echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "lineage"; then
+  AOSP_ROM_NAME="Axion OS${AXION_VER:+ (v$AXION_VER)}"
+elif [ -n "$EVO_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "evolution"; then
   IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="LineageOS"
-elif [ -n "$AXION_VER" ]; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="Axion OS (v$AXION_VER)"
-elif echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "axion"; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="Axion OS"
-elif [ -n "$EVO_VER" ]; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="Evolution X (v$EVO_VER)"
-elif echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "evolution"; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="Evolution X"
+  AOSP_ROM_NAME="Evolution X${EVO_VER:+ (v$EVO_VER)}"
 elif [ -n "$PIXELOS_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "pixelos"; then
   IS_CUSTOM_AOSP=true
   AOSP_ROM_NAME="PixelOS"
@@ -327,23 +334,132 @@ elif [ -n "$CALYX_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "caly
 elif [ -n "$GRAPHENE_VER" ] || echo "$MOD_VER_PROP $BUILD_DISPLAY" | grep -qi "graphene"; then
   IS_CUSTOM_AOSP=true
   AOSP_ROM_NAME="GrapheneOS"
-elif [ -n "$AOSP_VERSION" ]; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="Custom AOSP (v$AOSP_VERSION)"
-elif echo "$BUILD_DISPLAY" | grep -qiE "aosp|vanilla|resurrection"; then
-  IS_CUSTOM_AOSP=true
-  AOSP_ROM_NAME="AOSP Vanilla"
-# Deterministic hardware vs OS skin detection:
-# If hardware is Xiaomi/POCO/Redmi but NO Xiaomi framework props or SystemUI exist, it is an AOSP ROM
-elif [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "poco" ] || [ "$BRAND" = "redmi" ]; then
-  if [ -z "$MIUI_VER" ] && [ -z "$HYPEROS_VER" ] && [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+fi
+
+# Layer 2: build.prop direct file search (if getprop was filtered by property_contexts)
+if [ -z "$AOSP_ROM_NAME" ]; then
+  raw_crd=$(grep -m1 -h -iE "^ro\.crdroid\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+  if [ -n "$raw_crd" ]; then
+    raw_crd="${raw_crd#v}"
+    raw_crd="${raw_crd#V}"
     IS_CUSTOM_AOSP=true
-    AOSP_ROM_NAME="AOSP Custom / Pure AOSP"
+    AOSP_ROM_NAME="crDroid (v$raw_crd)"
+  elif grep -q -m1 -iE "ro\.crdroid|crdroid" $BUILD_PROP_FILES 2>/dev/null; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="crDroid"
   fi
-elif [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
-  if [ -z "$ONEUI_VER" ] && ! pm list packages 2>/dev/null | grep -q "com.sec.android.app"; then
+
+  if [ -z "$AOSP_ROM_NAME" ]; then
+    raw_lin=$(grep -m1 -h -iE "^ro\.lineage\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_lin" ]; then
+      raw_lin="${raw_lin#v}"
+      raw_lin="${raw_lin#V}"
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="LineageOS (v$raw_lin)"
+    elif grep -q -m1 -i "lineage" $BUILD_PROP_FILES 2>/dev/null; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="LineageOS"
+    fi
+  fi
+
+  if [ -z "$AOSP_ROM_NAME" ]; then
+    raw_axi=$(grep -m1 -h -iE "^ro\.axion\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_axi" ]; then
+      raw_axi="${raw_axi#v}"
+      raw_axi="${raw_axi#V}"
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Axion OS (v$raw_axi)"
+    elif grep -q -m1 -i "axion" $BUILD_PROP_FILES 2>/dev/null; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Axion OS"
+    fi
+  fi
+
+  if [ -z "$AOSP_ROM_NAME" ]; then
+    raw_evo=$(grep -m1 -h -iE "^ro\.evolution\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_evo" ]; then
+      raw_evo="${raw_evo#v}"
+      raw_evo="${raw_evo#V}"
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Evolution X (v$raw_evo)"
+    elif grep -q -m1 -i "evolution" $BUILD_PROP_FILES 2>/dev/null; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Evolution X"
+    fi
+  fi
+fi
+
+# Layer 3: Filesystem package / priv-app directory inspection
+if [ -z "$AOSP_ROM_NAME" ]; then
+  for p in /system /system_ext /product /system/system_ext /system/product; do
+    if [ -d "$p/priv-app/crDroidSettings" ] || [ -d "$p/app/crDroidSettings" ] || [ -d "$p/priv-app/crDroid" ] || [ -d "$p/priv-app/crDroidParts" ] || [ -f "$p/etc/permissions/org.crdroid.xml" ]; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="crDroid"
+      break
+    elif [ -d "$p/priv-app/LineageParts" ] || [ -d "$p/priv-app/LineageSettings" ] || [ -f "$p/etc/permissions/org.lineageos.xml" ]; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="LineageOS"
+      break
+    elif [ -d "$p/priv-app/AxionSettings" ] || [ -d "$p/priv-app/AxionParts" ] || [ -f "$p/etc/permissions/org.axion.xml" ]; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Axion OS"
+      break
+    elif [ -d "$p/priv-app/Evolver" ] || [ -d "$p/priv-app/EvolutionSettings" ]; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="Evolution X"
+      break
+    fi
+  done
+fi
+
+# Layer 4: Android Package Manager (pm list packages)
+if [ -z "$AOSP_ROM_NAME" ]; then
+  all_pkgs=$(pm list packages 2>/dev/null)
+  if echo "$all_pkgs" | grep -qiE "org\.crdroid|com\.crdroid"; then
     IS_CUSTOM_AOSP=true
-    AOSP_ROM_NAME="AOSP Custom / Pure AOSP"
+    AOSP_ROM_NAME="crDroid"
+  elif echo "$all_pkgs" | grep -qiE "org\.lineageos"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="LineageOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.axion"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="Axion OS"
+  elif echo "$all_pkgs" | grep -qiE "com\.evolution|org\.evolution"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="Evolution X"
+  elif echo "$all_pkgs" | grep -qiE "org\.pixelos"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="PixelOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.derpfest"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="DerpFest"
+  elif echo "$all_pkgs" | grep -qiE "org\.rising"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="RisingOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.matrixx"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="Project Matrixx"
+  fi
+fi
+
+# Layer 5: Fallbacks for Generic / Pure AOSP builds
+if [ -z "$AOSP_ROM_NAME" ]; then
+  if [ -n "$AOSP_VERSION" ]; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="Custom AOSP (v$AOSP_VERSION)"
+  elif echo "$BUILD_DISPLAY" | grep -qiE "aosp|vanilla|resurrection"; then
+    IS_CUSTOM_AOSP=true
+    AOSP_ROM_NAME="AOSP Vanilla"
+  elif [ "$MANUFACTURER" = "xiaomi" ] || [ "$BRAND" = "xiaomi" ] || [ "$BRAND" = "poco" ] || [ "$BRAND" = "redmi" ]; then
+    if [ -z "$MIUI_VER" ] && [ -z "$HYPEROS_VER" ] && [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="AOSP Custom / Pure AOSP"
+    fi
+  elif [ "$MANUFACTURER" = "samsung" ] || [ "$BRAND" = "samsung" ]; then
+    if [ -z "$ONEUI_VER" ] && ! pm list packages 2>/dev/null | grep -q "com.sec.android.app"; then
+      IS_CUSTOM_AOSP=true
+      AOSP_ROM_NAME="AOSP Custom / Pure AOSP"
+    fi
   fi
 fi
 

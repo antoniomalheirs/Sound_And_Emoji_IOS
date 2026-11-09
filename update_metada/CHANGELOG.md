@@ -4,6 +4,15 @@
 
 # Changelogs
 
+#### V2.0.22 — 4-Layer Deep ROM Identification & Audit (crDroid, LineageOS, Axion OS, Evolution X)
+- **FEAT (4-Layer Deep ROM Identification):** Upgraded ROM identification from single-property queries to a comprehensive 4-layer detection engine across `customize.sh`, `service.sh`, and `dump_logs.sh`:
+  - **Layer 1 (Property Service):** Queries `ro.crdroid.display.version`, `ro.crdroid.version`, `ro.crdroid.build.version`, `ro.crdroid.device`, `ro.lineage.display.version`, `ro.axion.display.version`, `ro.evolution.display.version`, `ro.build.description`, `ro.build.flavor`, and `ro.modversion`.
+  - **Layer 2 (Direct build.prop Filesystem Inspection):** Directly scans `/system/build.prop`, `/system_ext/build.prop`, `/product/build.prop`, and `/vendor/build.prop` on disk, bypassing any SELinux property context restrictions or unexported prop definitions.
+  - **Layer 3 (Filesystem Package & Priv-App Directories):** Checks for presence of ROM-specific control hubs (e.g. `/system_ext/priv-app/crDroidSettings`, `/system/priv-app/LineageParts`, `/system_ext/priv-app/AxionSettings`, `/system_ext/priv-app/Evolver`).
+  - **Layer 4 (Package Manager):** Scans installed system packages via `pm list packages` for `org.crdroid.settings`, `org.lineageos.settings`, `org.axion`, etc.
+- **NEW (ROM Identification Audit in Diagnostics):** Added section `[1b. ROM IDENTIFICATION AUDIT]` in both `service.sh` and `dump_logs.sh`, logging all raw queried ROM properties, matched build.prop lines, installed ROM package IDs, and priv-app directories for 100% technical transparency.
+- **ZERO REGRESSIONS:** Preserves all existing hardware mappings, audio paths, and emoji font overlays.
+
 #### V2.0.21 — Dynamic Custom AOSP ROM Name Detection & Diagnostic Transparency
 - **FEAT (Dynamic Custom AOSP ROM Detection in Installer):** Replaced static `(Axion OS / AOSP)` installer notification in `customize.sh` with granular dynamic detection across major AOSP custom ROMs. The installer now accurately identifies and reports the exact running ROM name and version (e.g. `crDroid`, `LineageOS`, `Axion OS`, `Evolution X`, `PixelOS`, `RisingOS`, `Project Matrixx`, `DerpFest`, `Paranoid Android / AOSPA`, `ArrowOS`, `Havoc-OS`, `SparkOS`, `CalyxOS`, `GrapheneOS`, etc.) via system properties (`ro.crdroid.version`, `ro.lineage.version`, `ro.axion.version`, `ro.evolution.version`, `ro.modversion`, and `ro.build.display.id`), eliminating misleading Axion OS labeling on crDroid and other ROMs.
 - **IMPROVED (Custom ROM Field in Diagnostic Reports):** Added a dedicated `Custom ROM` entry to the Executive Health Summary in both `service.sh` and `dump_logs.sh`, reporting the specific custom ROM name alongside OEM hardware info and root manager metrics.

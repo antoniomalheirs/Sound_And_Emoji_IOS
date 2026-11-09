@@ -75,39 +75,160 @@ fi
 log "INFO: OPPO/OnePlus/Realme detected: $IS_OPPO"
 
 # ─── Custom AOSP ROM Detection ──────────────────────────────────────
+# Multi-layered inspection across:
+#   1. System properties (getprop)
+#   2. build.prop files on disk (bypasses SELinux property context restrictions)
+#   3. ROM-specific priv-app / app packages on filesystem
+#   4. Android Package Manager (pm list packages)
+#   5. Hardware vs Framework absence (fallback)
 AOSP_ROM_NAME="None (OEM Stock)"
-crd_v=$(getprop ro.crdroid.version 2>/dev/null)
+
+# Layer 1: System Properties via getprop
+crd_v=$(getprop ro.crdroid.display.version 2>/dev/null)
+[ -z "$crd_v" ] && crd_v=$(getprop ro.crdroid.version 2>/dev/null)
 [ -z "$crd_v" ] && crd_v=$(getprop ro.crdroid.build.version 2>/dev/null)
-lin_v=$(getprop ro.lineage.version 2>/dev/null)
+[ -z "$crd_v" ] && crd_v=$(getprop ro.cr.version 2>/dev/null)
+crd_v="${crd_v#v}"
+crd_v="${crd_v#V}"
+
+lin_v=$(getprop ro.lineage.display.version 2>/dev/null)
+[ -z "$lin_v" ] && lin_v=$(getprop ro.lineage.version 2>/dev/null)
 [ -z "$lin_v" ] && lin_v=$(getprop ro.lineage.build.version 2>/dev/null)
-axi_v=$(getprop ro.axion.version 2>/dev/null)
-evo_v=$(getprop ro.evolution.version 2>/dev/null)
+lin_v="${lin_v#v}"
+lin_v="${lin_v#V}"
+
+axi_v=$(getprop ro.axion.display.version 2>/dev/null)
+[ -z "$axi_v" ] && axi_v=$(getprop ro.axion.version 2>/dev/null)
+axi_v="${axi_v#v}"
+axi_v="${axi_v#V}"
+
+evo_v=$(getprop ro.evolution.display.version 2>/dev/null)
+[ -z "$evo_v" ] && evo_v=$(getprop ro.evolution.version 2>/dev/null)
+evo_v="${evo_v#v}"
+evo_v="${evo_v#V}"
+
 b_disp=$(getprop ro.build.display.id 2>/dev/null)
 m_prop=$(getprop ro.modversion 2>/dev/null)
+b_desc=$(getprop ro.build.description 2>/dev/null)
+b_flav=$(getprop ro.build.flavor 2>/dev/null)
+all_prop_str="$m_prop $b_disp $b_desc $b_flav"
 
-if [ -n "$crd_v" ] || echo "$m_prop $b_disp" | grep -qi "crdroid"; then
+BUILD_PROP_FILES="/system/build.prop /system/etc/build.prop /system_ext/build.prop /system_ext/etc/build.prop /product/build.prop /product/etc/build.prop /vendor/build.prop /odm/etc/build.prop /system/system/build.prop"
+
+if [ -n "$crd_v" ] || [ -n "$(getprop ro.crdroid.device 2>/dev/null)" ] || echo "$all_prop_str" | grep -qi "crdroid"; then
   AOSP_ROM_NAME="crDroid${crd_v:+ (v$crd_v)}"
-elif [ -n "$lin_v" ] || echo "$m_prop $b_disp" | grep -qi "lineage"; then
+elif [ -n "$lin_v" ] || echo "$all_prop_str" | grep -qi "lineage"; then
   AOSP_ROM_NAME="LineageOS${lin_v:+ (v$lin_v)}"
-elif [ -n "$axi_v" ] || echo "$m_prop $b_disp" | grep -qi "axion"; then
+elif [ -n "$axi_v" ] || echo "$all_prop_str" | grep -qi "axion"; then
   AOSP_ROM_NAME="Axion OS${axi_v:+ (v$axi_v)}"
-elif [ -n "$evo_v" ] || echo "$m_prop $b_disp" | grep -qi "evolution"; then
+elif [ -n "$evo_v" ] || echo "$all_prop_str" | grep -qi "evolution"; then
   AOSP_ROM_NAME="Evolution X${evo_v:+ (v$evo_v)}"
-elif echo "$m_prop $b_disp" | grep -qi "pixelos"; then
+elif echo "$all_prop_str" | grep -qi "pixelos"; then
   AOSP_ROM_NAME="PixelOS"
-elif echo "$m_prop $b_disp" | grep -qi "rising"; then
+elif echo "$all_prop_str" | grep -qi "rising"; then
   AOSP_ROM_NAME="RisingOS"
-elif echo "$m_prop $b_disp" | grep -qi "matrixx"; then
+elif echo "$all_prop_str" | grep -qi "matrixx"; then
   AOSP_ROM_NAME="Project Matrixx"
-elif echo "$m_prop $b_disp" | grep -qi "derp"; then
+elif echo "$all_prop_str" | grep -qi "derp"; then
   AOSP_ROM_NAME="DerpFest"
-elif [ -n "$(getprop ro.rom.version 2>/dev/null)" ]; then
-  AOSP_ROM_NAME="Custom AOSP (v$(getprop ro.rom.version 2>/dev/null))"
-elif [ -z "$(getprop ro.miui.ui.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.mi.os.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.build.version.oneui 2>/dev/null)" ]; then
-  if [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
-    case "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" in
-      xiaomi|poco|redmi|samsung) AOSP_ROM_NAME="AOSP Custom / Pure AOSP" ;;
-    esac
+fi
+
+# Layer 2: build.prop files direct inspection
+if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+  raw_crd=$(grep -m1 -h -iE "^ro\.crdroid\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+  if [ -n "$raw_crd" ]; then
+    raw_crd="${raw_crd#v}"
+    raw_crd="${raw_crd#V}"
+    AOSP_ROM_NAME="crDroid (v$raw_crd)"
+  elif grep -q -m1 -iE "ro\.crdroid|crdroid" $BUILD_PROP_FILES 2>/dev/null; then
+    AOSP_ROM_NAME="crDroid"
+  fi
+
+  if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+    raw_lin=$(grep -m1 -h -iE "^ro\.lineage\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_lin" ]; then
+      raw_lin="${raw_lin#v}"
+      raw_lin="${raw_lin#V}"
+      AOSP_ROM_NAME="LineageOS (v$raw_lin)"
+    elif grep -q -m1 -i "lineage" $BUILD_PROP_FILES 2>/dev/null; then
+      AOSP_ROM_NAME="LineageOS"
+    fi
+  fi
+
+  if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+    raw_axi=$(grep -m1 -h -iE "^ro\.axion\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_axi" ]; then
+      raw_axi="${raw_axi#v}"
+      raw_axi="${raw_axi#V}"
+      AOSP_ROM_NAME="Axion OS (v$raw_axi)"
+    elif grep -q -m1 -i "axion" $BUILD_PROP_FILES 2>/dev/null; then
+      AOSP_ROM_NAME="Axion OS"
+    fi
+  fi
+
+  if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+    raw_evo=$(grep -m1 -h -iE "^ro\.evolution\.(display\.)?version=" $BUILD_PROP_FILES 2>/dev/null | head -n1 | cut -d= -f2)
+    if [ -n "$raw_evo" ]; then
+      raw_evo="${raw_evo#v}"
+      raw_evo="${raw_evo#V}"
+      AOSP_ROM_NAME="Evolution X (v$raw_evo)"
+    elif grep -q -m1 -i "evolution" $BUILD_PROP_FILES 2>/dev/null; then
+      AOSP_ROM_NAME="Evolution X"
+    fi
+  fi
+fi
+
+# Layer 3: Filesystem package / priv-app directory inspection
+if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+  for p in /system /system_ext /product /system/system_ext /system/product; do
+    if [ -d "$p/priv-app/crDroidSettings" ] || [ -d "$p/app/crDroidSettings" ] || [ -d "$p/priv-app/crDroid" ] || [ -d "$p/priv-app/crDroidParts" ] || [ -f "$p/etc/permissions/org.crdroid.xml" ]; then
+      AOSP_ROM_NAME="crDroid"
+      break
+    elif [ -d "$p/priv-app/LineageParts" ] || [ -d "$p/priv-app/LineageSettings" ] || [ -f "$p/etc/permissions/org.lineageos.xml" ]; then
+      AOSP_ROM_NAME="LineageOS"
+      break
+    elif [ -d "$p/priv-app/AxionSettings" ] || [ -d "$p/priv-app/AxionParts" ] || [ -f "$p/etc/permissions/org.axion.xml" ]; then
+      AOSP_ROM_NAME="Axion OS"
+      break
+    elif [ -d "$p/priv-app/Evolver" ] || [ -d "$p/priv-app/EvolutionSettings" ]; then
+      AOSP_ROM_NAME="Evolution X"
+      break
+    fi
+  done
+fi
+
+# Layer 4: Android Package Manager (pm list packages)
+if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+  all_pkgs=$(pm list packages 2>/dev/null)
+  if echo "$all_pkgs" | grep -qiE "org\.crdroid|com\.crdroid"; then
+    AOSP_ROM_NAME="crDroid"
+  elif echo "$all_pkgs" | grep -qiE "org\.lineageos"; then
+    AOSP_ROM_NAME="LineageOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.axion"; then
+    AOSP_ROM_NAME="Axion OS"
+  elif echo "$all_pkgs" | grep -qiE "com\.evolution|org\.evolution"; then
+    AOSP_ROM_NAME="Evolution X"
+  elif echo "$all_pkgs" | grep -qiE "org\.pixelos"; then
+    AOSP_ROM_NAME="PixelOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.derpfest"; then
+    AOSP_ROM_NAME="DerpFest"
+  elif echo "$all_pkgs" | grep -qiE "org\.rising"; then
+    AOSP_ROM_NAME="RisingOS"
+  elif echo "$all_pkgs" | grep -qiE "org\.matrixx"; then
+    AOSP_ROM_NAME="Project Matrixx"
+  fi
+fi
+
+# Layer 5: Fallbacks
+if [ "$AOSP_ROM_NAME" = "None (OEM Stock)" ]; then
+  if [ -n "$(getprop ro.rom.version 2>/dev/null)" ]; then
+    AOSP_ROM_NAME="Custom AOSP (v$(getprop ro.rom.version 2>/dev/null))"
+  elif [ -z "$(getprop ro.miui.ui.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.mi.os.version.name 2>/dev/null)" ] && [ -z "$(getprop ro.build.version.oneui 2>/dev/null)" ]; then
+    if [ ! -d "/system/priv-app/MiuiSystemUI" ] && [ ! -d "/product/priv-app/MiuiSystemUI" ]; then
+      case "$(getprop ro.product.manufacturer 2>/dev/null | tr '[:upper:]' '[:lower:]')" in
+        xiaomi|poco|redmi|samsung) AOSP_ROM_NAME="AOSP Custom / Pure AOSP" ;;
+      esac
+    fi
   fi
 fi
 log "INFO: Custom AOSP ROM detected: $AOSP_ROM_NAME"
@@ -1073,6 +1194,18 @@ generate_diagnostic_report() {
     echo "Custom ROM        : $AOSP_ROM_NAME"
     echo "ROM Skin          : MIUI=$(getprop ro.miui.ui.version.name 2>/dev/null) | HyperOS=$(getprop ro.mi.os.version.name 2>/dev/null) | OneUI=$(getprop ro.build.version.oneui 2>/dev/null)"
     echo "Root Manager      : $ROOT_MGR"
+    echo ""
+    echo "─── [1b. ROM IDENTIFICATION AUDIT] ─────────────────────────────────────────"
+    echo "Detected Custom ROM: $AOSP_ROM_NAME"
+    echo "crDroid props      : display=$(getprop ro.crdroid.display.version 2>/dev/null) | ver=$(getprop ro.crdroid.version 2>/dev/null) | build=$(getprop ro.crdroid.build.version 2>/dev/null) | device=$(getprop ro.crdroid.device 2>/dev/null)"
+    echo "Lineage props      : display=$(getprop ro.lineage.display.version 2>/dev/null) | ver=$(getprop ro.lineage.version 2>/dev/null)"
+    echo "Axion props        : display=$(getprop ro.axion.display.version 2>/dev/null) | ver=$(getprop ro.axion.version 2>/dev/null)"
+    echo "Build Display ID   : $(getprop ro.build.display.id 2>/dev/null)"
+    echo "Build Description  : $(getprop ro.build.description 2>/dev/null)"
+    echo "Mod Version        : $(getprop ro.modversion 2>/dev/null)"
+    echo "build.prop matches : $(grep -h -m1 -iE "^ro\.(crdroid|lineage|axion|evolution)\." /system/build.prop /system_ext/build.prop /product/build.prop 2>/dev/null | tr '\n' ' ')"
+    echo "Custom ROM pkgs    : $(pm list packages 2>/dev/null | grep -iE "crdroid|lineage|axion|evolution" | tr '\n' ' ')"
+    echo "Priv-app dirs      : $(ls -d /system/priv-app/*crdroid* /system_ext/priv-app/*crdroid* /product/priv-app/*crdroid* /system/priv-app/*crDroid* /system_ext/priv-app/*crDroid* /product/priv-app/*crDroid* 2>/dev/null | tr '\n' ' ')"
 
     local meta_name="None detected"
     for mdir in /data/adb/modules/*/; do
