@@ -457,7 +457,10 @@ for cd in /data/adb/modules/gbl_root_canoe /data/adb/modules/canoe; do
   [ -d "$cd" ] && canoe_detected="YES (module dir: $cd)"
 done
 if [ "$vb_state" = "green" ] && [ "$ROOT_MGR" != "Unknown" ]; then
-  canoe_detected="${canoe_detected} + green boot state with root (possible fake lock)"
+  # green + root is normal on KernelSU NEXT — only note it, don't flag as canoe
+  if [ "$canoe_detected" = "NO" ]; then
+    canoe_detected="NO (green+root is normal for KernelSU NEXT)"
+  fi
 fi
 log "DIAG: gbl_root_canoe: $canoe_detected"
 

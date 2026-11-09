@@ -4,6 +4,10 @@
 
 # Changelogs
 
+#### V2.0.19 — Fix gbl_root_canoe False Positive Detection
+- **FIX (False Positive gbl_root_canoe Detection):** Removed the `green boot state + root` heuristic from the canoe detection logic. KernelSU NEXT preserves the verified boot chain (`ro.boot.verifiedbootstate=green`) without breaking it, which is completely normal behavior — NOT an indicator of `gbl_root_canoe`. This heuristic caused false positive canoe warnings on devices like POCO X6 Pro running AOSP ROMs with KernelSU NEXT. Detection now relies solely on concrete evidence: `efisp` partition existence and canoe module directory presence.
+- **IMPROVED (Diagnostic Messages):** Updated diagnostic reports in `service.sh` and `dump_logs.sh` to correctly label `green+root` as normal KernelSU NEXT behavior instead of suggesting a fake locked bootloader.
+
 #### V2.0.18 — Fix Gboard Emoji Panel + Snapchat + EmojiCompat Global Cleanup (Issue #12)
 - **FIX (Issue #12 — Gboard Emoji Keyboard Panel Still Showing Stock Emojis):** Fixed critical issue where Gboard's emoji picker panel displayed Google stock emojis even though app text rendering showed iOS emojis correctly. Root cause: Gboard downloads a stock `NotoColorEmoji` font via Google Play Services `EmojiCompat` into `files/fonts/`, which takes priority over the system font for the emoji keyboard panel. The module now cleans `files/fonts/`, `no_backup/*emoji*`, and `files/emoji_metadata*` from Gboard on both installation and boot.
 - **FIX (Issue #12 — Snapchat Emojis Not Changing):** Snapchat uses `androidx.emoji2` which caches stock emoji fonts from GMS. Added global EmojiCompat cache cleanup that scans ALL installed apps and removes cached emoji fonts from `files/fonts/` directories, forcing apps to fall back to the system iOS emoji font.

@@ -154,7 +154,10 @@ fi
   [ -d "/data/adb/modules/gbl_root_canoe" ] && canoe_status="DETECTED (module installed)"
   _vb=$(getprop ro.boot.verifiedbootstate 2>/dev/null)
   if [ "$_vb" = "green" ] && [ "$ROOT_MGR" != "Unknown" ]; then
-    canoe_status="${canoe_status} + green boot with root (possible fake lock)"
+    # green + root is normal on KernelSU NEXT — only note if canoe not already detected
+    if [ "$canoe_status" = "NOT DETECTED" ]; then
+      canoe_status="NOT DETECTED (green+root is normal for KernelSU NEXT)"
+    fi
   fi
   echo "gbl_root_canoe  : $canoe_status"
 

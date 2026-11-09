@@ -502,13 +502,15 @@ for canoe_dir in /data/adb/modules/gbl_root_canoe /data/adb/modules/canoe /data/
   fi
 done
 
-# Método 3: Boot state faked (bootloader locked + root ativo)
+# Método 3: Boot state heuristic (DIAGNOSTIC ONLY — not used for IS_CANOE)
+# green + root is normal on KernelSU NEXT which preserves verified boot chain.
+# Only log this for diagnostics, do NOT set IS_CANOE — causes false positives
+# on AOSP ROMs with KernelSU NEXT (e.g., POCO X6 Pro).
 if [ "$IS_CANOE" = false ]; then
   VERIFIED_STATE=$(getprop ro.boot.verifiedbootstate 2>/dev/null)
   FLASH_LOCKED=$(getprop ro.boot.flash.locked 2>/dev/null)
   if [ "$VERIFIED_STATE" = "green" ] && { [ "$IS_KSU" = true ] || [ "$IS_MAGISK" = true ] || [ "$IS_APATCH" = true ]; }; then
-    IS_CANOE=true
-    CANOE_REASONS="${CANOE_REASONS:+$CANOE_REASONS; }green+root (possible fake lock)"
+    log_inst "NOTE: green boot state + root detected (normal for KernelSU NEXT, NOT necessarily canoe)"
   fi
 fi
 
